@@ -1,0 +1,6 @@
+#! /bin/bash
+CUR_DIR=`cd $(dirname $0) && pwd`
+nohup label-studio start ${CUR_DIR}/../etc/labelstudio/asba-annot 2> label-studio.log &
+echo $! > label-studio.pid
+echo "LabelStudio is listening on http://0.0.0.0:9090"
+echo "pid is saved in label-studio.pid"

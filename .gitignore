@@ -2,6 +2,13 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,vscode
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,jupyternotebooks,vscode
 
+*.log
+*.out
+*.tmp
+*.pid
+*~
+miniconda3/
+etc/labelstudio/asba-annot/completions/
 data/*
 !data/.gitkeep
 

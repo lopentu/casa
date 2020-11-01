@@ -1,0 +1,35 @@
+<View>
+  <Header value="ABSA 標記"></Header>
+  
+  <View whenTagName="Relevance" whenChoiceValue="包含評價性敘述" visibleWhen="choice-selected">
+    <HyperTextLabels name="aspect-label" toName="text">
+      <Label value="Entity" background="#428" hotkey="e"></Label>
+      <Label value="Attribute" background="#482" hotkey="a"></Label>
+      <Label value="Evaluation" background="#AA2" hotkey="v"></Label>
+    </HyperTextLabels>  
+  </View>
+  
+  
+  <HyperText name="text" value="$text"></HyperText>
+  
+  <View whenTagName="aspect-label" whenLabelValue="Evaluation" visibleWhen="region-selected" perRegion="true">
+    
+    <Relations>
+      <Relation value="pair1"></Relation>
+  	</Relations>
+	
+    <Header value="情緒極度" size="5" underline="true"></Header>
+    <Header size="6" value="一顆星代表最非常負面，三顆星代表中性，五顆星代表非常正面。"></Header>
+    <Rating name="sentiment" toName="text" maxRating="5" size="large" showInline="true">
+    </Rating>
+  </View>
+  
+  <Choices name="Relevance" toName="text" choice="single-radio">
+    <Choice value="包含評價性敘述" hotkey="1"></Choice>
+    <Choice value="無評價性敘述" hotkey="2"></Choice>
+    
+  </Choices>        
+  <TextArea name="memo" toName="text" placeholder="其他附註" rows="3"></TextArea>
+  
+  
+</View>
