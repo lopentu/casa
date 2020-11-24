@@ -1,4 +1,5 @@
 import logging
+from tqdm.auto import tqdm
 
 MAIN_LABELS = ["主文"]
 
@@ -15,14 +16,14 @@ def default_field_mapper(data_dict):
 class Opinion:
     def __init__(self, data_dict, field_mapper=default_field_mapper):
         data_dict = field_mapper(data_dict)
-        self.id = data_dict.get("id", "")
-        self.title = data_dict.get("title", "")
-        self.source = data_dict.get("source", "")
-        self.channel = data_dict.get("channel", "")
-        self.author = data_dict.get("author", "")
-        self.text = data_dict.get("text", "")
-        self.post_type = data_dict.get("post_type", "")
-        self.url = data_dict.get("url", "")
+        self.id = data_dict.get("id", "").strip()
+        self.title = data_dict.get("title", "").strip()
+        self.source = data_dict.get("source", "").strip()
+        self.channel = data_dict.get("channel", "").strip()
+        self.author = data_dict.get("author", "").strip()
+        self.text = data_dict.get("text", "").strip()
+        self.post_type = data_dict.get("post_type", "").strip()
+        self.url = data_dict.get("url", "").strip()
         self.topic = data_dict.get("topic", "")
         self.sentence_sentiment = None        
     
@@ -34,7 +35,7 @@ class Opinion:
         assert self.id != prev_opinion.author
         assert self.author == prev_opinion.author
         assert self.title == prev_opinion.title
-        self.text = prev_opinion.text + " " + self.text
+        self.text = prev_opinion.text + " " + self.text        
 
 class OpinionThread:
     def __init__(self):
@@ -97,13 +98,27 @@ class OpinionThread:
             print("Main: (No main post)")
         for reply in self.replies:
             print("--", reply)
-
+    
+    def opinion_texts(self):
+        if self.main:
+            yield self.main.title + "\u3000" + self.main.text
+            for reply_x in self.replies:
+                yield reply_x.text
+        else:
+            if not self.replies: return
+            reply0 = self.replies[0]
+            yield reply0.title + "\u3000" + reply0.text
+            
+            if len(self.replies) > 1:
+                for reply_x in self.replies[1:]:
+                    yield reply_x.text
+        
 
 def make_opinion_threads(data):
     last_opinion = Opinion({})    
     thread_list = []
     thread = OpinionThread()    
-    for data_item in data:        
+    for data_item in tqdm(data):        
         try:
             opinion = Opinion(data_item)
         except Exception as ex:
