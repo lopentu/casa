@@ -20,7 +20,7 @@
 	
     <Header value="情緒極度" size="5" underline="true"></Header>
     <Header size="6" value="一顆星代表最非常負面，三顆星代表中性，五顆星代表非常正面。"></Header>
-    <Rating name="sentiment" toName="text" maxRating="5" size="large" showInline="true">
+    <Rating name="sentiment" toName="text" maxRating="5" size="large" showInline="true" perRegion="true">
     </Rating>
   </View>
   

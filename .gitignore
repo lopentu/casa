@@ -10,6 +10,7 @@
 miniconda3/
 etc/labelstudio/asba-annot/completions/
 etc/labelstudio/asba-annot/tasks.json
+etc/labelstudio/asba-annot/upload/
 data/*
 !data/.gitkeep
 
