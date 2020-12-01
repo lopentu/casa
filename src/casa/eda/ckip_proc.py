@@ -10,11 +10,17 @@ class CkipProcessor(EdaProcessor):
         self.flag = "ckip"
 
     def process(self, opinion: Opinion):
-        opp = OpinionProc.from_opinion(opinion)
-        sp = self.sp        
-        opp.text_tokens = self.preproc(opp.text)
-        opp.title_tokens = self.preproc(opp.title)
-        opp.proc_info = {"segmentation": {"type": "ckip"}, "pos": {"type": "ckip"}}
+        opp = OpinionProc.from_opinion(opinion)        
+        text_tokens = self.preproc(opp.text)        
+        title_tokens = self.preproc(opp.title)
+
+        opp.text_tokens = [x[0] for x in text_tokens]
+        opp.title_tokens = [x[0] for x in title_tokens]
+
+        opp.proc_info.update({
+          "segmentation": {"type": "ckip"}, 
+          "pos": {"type": "ckip"},
+          "ckip": {"text": text_tokens, "title": title_tokens}})
         return opp
     
     def preproc(self, text):
@@ -29,5 +35,9 @@ class CkipProcessor(EdaProcessor):
             for word, pos in zip(ws_list[i], pos_list[i]):
                 tokens.append((word, pos))
             tokens_list.append(tokens)
+        
+        # squeeze output
+        if len(tokens_list) == 1 and isinstance(tokens_list[0], list):
+            tokens_list = tokens_list[0]
         return tokens_list
 

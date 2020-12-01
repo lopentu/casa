@@ -2,5 +2,5 @@ pandas
 matplotlib
 scipy
 numpy
-gensims
+gensim
 sentencepiece

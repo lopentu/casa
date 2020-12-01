@@ -4,7 +4,8 @@ class OpinionProc(Opinion):
     def __init__(self, data_dict={}):
         super(OpinionProc, self).__init__(data_dict)
         self.proc_info = {}
-        self.parse_tree = None
+        self.text_tree = None
+        self.title_tree = None
         self.text_tokens = None        
         self.title_tokens = None
 
