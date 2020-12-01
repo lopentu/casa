@@ -7,7 +7,8 @@ from ..proc_opinions import OpinionProc
 
 class CkipSubmitProcessor(EdaProcessor):
     def __init__(self, ckip_proxy):
-        self.ckip_proxy        
+        self.ckip_proxy = ckip_proxy 
+        self.flag = ""    
 
     def process(self, opinion: Opinion):        
         self.ckip_proxy.submit(opinion.id+"h", opinion.title)
@@ -16,7 +17,7 @@ class CkipSubmitProcessor(EdaProcessor):
         return opinion        
 class CkipRetrieveProcessor(EdaProcessor):
     def __init__(self, ckip_proxy):
-        self.ckip_proxy
+        self.ckip_proxy = ckip_proxy
         self.flag = "ckip"
 
     def process(self, opinion: Opinion):
@@ -44,6 +45,7 @@ class CkipProxy:
         self.pos = pos
         self.buf = {}
         self.done = {}        
+        self.batch_size = batch_size
 
     def submit(self, task_id, text):
         self.buf[task_id] = text
@@ -70,9 +72,9 @@ class CkipProxy:
                 logging.error("tokenization length mismatch")
                 continue
 
-            for idx in enumerate(tokens_list):
+            for idx, tokens in enumerate(tokens_list):
                 task_id = task_ids[idx]                
-                self.done[task_id] = tokens_list[idx]
+                self.done[task_id] = tokens
 
 
     def tokenize(self, text):

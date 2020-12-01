@@ -111,7 +111,8 @@ class OpinionThread:
 
     def process(self, processor):
         if processor.flag in self.proc_flags:
-            logging.warning("Thread is already processed with %s", str(processor))
+            # logging.warning("Thread is already processed with %s", str(processor))
+            pass
         if self.main:
             self.main = processor.process(self.main)
         
