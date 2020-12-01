@@ -87,8 +87,8 @@ class OpinionThread:
     
     def opinion_tokens(self):
         def get_tokens(op):
-            text_tokens = getattr(op, "text_tokens", None)
-            title_tokens = getattr(op, "title_tokens", None)
+            text_tokens = getattr(op, "text_tokens", [])
+            title_tokens = getattr(op, "title_tokens", [])
             return title_tokens, text_tokens                
         
         if self.main:
