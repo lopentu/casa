@@ -19,7 +19,7 @@ class OpinionProc(Opinion):
         text = self.text[:20]+"..." if len(self.text)>20 else self.text
         tag = []
         if self.text_tokens: tag.append("tok")
-        if self.parse_tree: tag.append("tree")
+        if self.text_tree: tag.append("tree")
         return f"<OpinionProc [{self.source}] {self.author}: {text} ({'|'.join(tag)})>"
     
     
