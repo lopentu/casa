@@ -110,15 +110,30 @@ class OpinionThread:
                     yield text_tokens
 
     def process(self, processor):
-        if processor.flag in self.proc_flags:
+        if hasattr(processor, "flag") and processor.flag in self.proc_flags:
             # logging.warning("Thread is already processed with %s", str(processor))
             pass
         if self.main:
             self.main = processor.process(self.main)
         
         self.replies = [processor.process(x) for x in self.replies]
-        self.proc_flags.append(processor.flag)
+        if hasattr(processor, "flag"):
+            self.proc_flags.append(processor.flag)
+
+    def map(self, mapper):
+        map_results = {}
+        if self.main:
+            result = mapper.map(self.main)
+            if result:
+                map_results["main"] = result
         
+        for reply_i, reply_x in enumerate(self.replies):
+            map_result = mapper.map(reply_x)
+            if map_result:
+                res = map_results.setdefault("replies", {})
+                res[reply_i] = map_result
+        
+        return map_results
 
 
 
