@@ -4,3 +4,4 @@ from .utils import *
 from .eda.pattern_matching import *
 from .eda import make_tree, find_nodes, find_eval_text
 from .eda.spm_potentials import *
+from .cadet import Cadet

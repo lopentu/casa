@@ -2,16 +2,6 @@ from gensim.models import KeyedVectors
 from typing import List
 import numpy as np
 
-class SeedEntry:
-    def __init__(self, category, seed, candidates):
-        self.category = category
-        self.seed = seed
-        self.candidates = candidates
-
-    def __repr__(self):
-        return (f"<SeedEntry: {self.category}/{self.seed}"
-                f"({len(self.candidates)} candidates)>")
-
 class SeedDistribution:
     def __init__(self, spvec:KeyedVectors,
             entity_seeds: List[SeedEntry],

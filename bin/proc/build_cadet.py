@@ -13,10 +13,11 @@ def build_fastText(token_path, ft_path):
     from gensim.models import FastText
     from gensim.models.word2vec import LineSentence
     sp_sentences = LineSentence(token_path)
-    model = FastText(size=200, window=5, min_count=3)
+    model = FastText(size=200, window=5, min_count=5, bucket=30000)
     model.build_vocab(sentences=sp_sentences)
     model.train(sentences=sp_sentences, 
-                total_examples=model.corpus_count, epochs=5)
+                total_examples=model.corpus_count, 
+                epochs=5)
     model.wv.save(str(ft_path))
 
 def build_spm_tokens(text_path, token_path, sp_model_path):
