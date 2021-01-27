@@ -18,6 +18,13 @@ class OpinionThread:
         else:
             return None
 
+    def opinions(self):        
+        if self.main:
+            yield self.main
+        if self.replies:
+            for reply_x in self.replies:
+                yield reply_x            
+
     @property
     def title(self):
         op = self.get_opinion()
