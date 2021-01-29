@@ -95,7 +95,7 @@ class Cadet:
         }
 
     def tokenize(self, text, verbose=False):
-        stopped = "▁、。?,與和的是用跟"
+        stopped = "▁、。?,與和的是用跟到"
         pat1 = re.compile(f"^[{stopped}]+")
         pat2 = re.compile(f"[{stopped}]+$")
 
