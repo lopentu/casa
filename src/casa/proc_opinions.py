@@ -4,7 +4,8 @@ class OpinionProc(Opinion):
     def __init__(self, data_dict={}):
         super(OpinionProc, self).__init__(data_dict)
         self.proc_info = {}
-        self.parse_tree = None
+        self.text_tree = None
+        self.title_tree = None
         self.text_tokens = None        
         self.title_tokens = None
 
@@ -18,7 +19,7 @@ class OpinionProc(Opinion):
         text = self.text[:20]+"..." if len(self.text)>20 else self.text
         tag = []
         if self.text_tokens: tag.append("tok")
-        if self.parse_tree: tag.append("tree")
+        if self.text_tree: tag.append("tree")
         return f"<OpinionProc [{self.source}] {self.author}: {text} ({'|'.join(tag)})>"
     
     

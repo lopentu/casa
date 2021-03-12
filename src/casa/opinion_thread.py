@@ -18,6 +18,13 @@ class OpinionThread:
         else:
             return None
 
+    def opinions(self):        
+        if self.main:
+            yield self.main
+        if self.replies:
+            for reply_x in self.replies:
+                yield reply_x            
+
     @property
     def title(self):
         op = self.get_opinion()
@@ -87,8 +94,8 @@ class OpinionThread:
     
     def opinion_tokens(self):
         def get_tokens(op):
-            text_tokens = getattr(op, "text_tokens", None)
-            title_tokens = getattr(op, "title_tokens", None)
+            text_tokens = getattr(op, "text_tokens", [])
+            title_tokens = getattr(op, "title_tokens", [])
             return title_tokens, text_tokens                
         
         if self.main:
@@ -110,14 +117,30 @@ class OpinionThread:
                     yield text_tokens
 
     def process(self, processor):
-        if processor.flag in self.proc_flags:
-            logging.warning("Thread is already processed with %s", str(processor))
+        if hasattr(processor, "flag") and processor.flag in self.proc_flags:
+            # logging.warning("Thread is already processed with %s", str(processor))
+            pass
         if self.main:
             self.main = processor.process(self.main)
         
         self.replies = [processor.process(x) for x in self.replies]
-        self.proc_flags.append(processor.flag)
+        if hasattr(processor, "flag"):
+            self.proc_flags.append(processor.flag)
+
+    def map(self, mapper):
+        map_results = {}
+        if self.main:
+            result = mapper.map(self.main)
+            if result:
+                map_results["main"] = result
         
+        for reply_i, reply_x in enumerate(self.replies):
+            map_result = mapper.map(reply_x)
+            if map_result:
+                res = map_results.setdefault("replies", {})
+                res[reply_i] = map_result
+        
+        return map_results
 
 
 

@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import pandas as pd
 import pickle
+from tqdm import tqdm
 
 def main(args):
     csv_data = pd.read_csv(args.data_path)    
