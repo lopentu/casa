@@ -1,4 +1,5 @@
 #! /bin/bash
+set -e
 
 if [ $# -lt 1 ]; then
     echo "missing argument: input_csvs"
@@ -7,7 +8,7 @@ if [ $# -lt 1 ]; then
 fi;
 
 CADET_PREFIX=alpha
-PYTHONBIN=python
+PYTHONBIN=/mnt/c/Python38/python.exe
 echo "Making cadet model"
 echo "Input dir: $1"
 echo "cadet prefix: ${CADET_PREFIX}"
@@ -15,6 +16,11 @@ echo "cadet prefix: ${CADET_PREFIX}"
 INPUT_DIR=$1
 # csv -> pickles
 echo "Converting csv to python pickles"
+
+if [ ! -d $INPUT_DIR ]; then
+    echo "[ERROR] Cannot find directory: ${INPUT_DIR}" 
+    exit;
+fi;
 
 for csv in $INPUT_DIR/*.csv; do          
     pkl_path=${csv/.csv/.pkl}        
