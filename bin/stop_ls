@@ -1,14 +1,17 @@
 #! /bin/bash
 CUR_DIR=`cd $(dirname $0) && pwd`
 PID_FILE=${CUR_DIR}/label-studio.pid
+
 if [ -f $PID_FILE ]; then
-   echo -n "Trying to stop label-studio process..."
-   if kill $(cat $PID_FILE); then
-       echo "stopped"
-       rm $PID_FILE
-   else
-       echo "failed"
-   fi
+    echo "Trying to stop label-studio process..."
+    for pid in $(cat ${PID_FILE}); do
+        if kill ${pid}; then
+            echo "stopped process ${pid}"
+        else
+            echo "cannot stop ${pid}"
+        fi
+    done
+    rm $PID_FILE
 else
-   echo "$PID_FILE not found. Is it running?"
+    echo "$PID_FILE not found. Is it running?"
 fi
