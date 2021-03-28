@@ -5,4 +5,5 @@ from .eda.pattern_matching import *
 from .eda import make_tree, find_nodes, find_eval_text
 from .eda.spm_potentials import *
 from .cadet import Cadet
-from .thread_formatter import format_thread, format_thread_html
+from .thread_formatter import format_thread, format_thread_html, format_thread_by_type_html
+from . import annot
