@@ -5,13 +5,15 @@ PID_FILE=${CUR_DIR}/label-studio.pid
 if [ -f $PID_FILE ]; then
     echo "Trying to stop label-studio process..."
     for pid in $(cat ${PID_FILE}); do
-        if kill ${pid}; then
+        if kill ${pid}; then            
             echo "stopped process ${pid}"
         else
             echo "cannot stop ${pid}"
         fi
     done
     rm $PID_FILE
+    rm *.log
 else
     echo "$PID_FILE not found. Is it running?"
 fi
+

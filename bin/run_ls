@@ -5,14 +5,15 @@ if [ -f ${CUR_DIR}/label-studio.pid ]; then
     bash ${CUR_DIR}/stop_ls
 fi
 
-for idx in $(seq -f "%02g" 1 2 3 4); do
-    PROJ_DIR=${CUR_DIR}/../etc/labelstudio/absa-alpha-${idx}
+for idx in $(seq 1 10); do
+    IDXZ=$(echo 0$idx | tail -c 3)
+    PROJ_DIR=${CUR_DIR}/../etc/labelstudio/absa-beta-${IDXZ}
     if [ ! -d ${PROJ_DIR} ]; then
         echo "cannot find project: ${PROJ_DIR}"
         continue
     fi
     let port=9090+idx
-    nohup label-studio start ${PROJ_DIR} -p ${port} 2> label-studio.${idx}.log &
+    nohup label-studio start ${PROJ_DIR} -p ${port} 2> label-studio.${IDXZ}.log &
     echo $! >> label-studio.pid
-    echo "LS absa-alpha-${idx} is listening  on http://0.0.0.0:${port}"
+    echo "LS absa-beta-${IDXZ} is listening on http://0.0.0.0:${port}"
 done
