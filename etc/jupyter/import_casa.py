@@ -5,5 +5,6 @@ import sys
 sys.path.append(str(src_path))
 
 import casa
+from casa import annot as cano
 import logging
 logging.basicConfig(level="INFO", format="[%(levelname)s] %(asctime)s %(name)s: %(message)s")
