@@ -52,6 +52,9 @@ def process_thread_annotations(annot_item, debug=False):
         span_id = span_x.annot_id        
         span_x.annotations = annot_spans.get(span_id, [])
     
+    # Apply default relation heuristics
+    link_default_relations(relations, text_spans)
+
     # Constructing aspects from grouping related spans 
     buf = text_spans.copy()
     aspect_list = []
@@ -64,9 +67,13 @@ def process_thread_annotations(annot_item, debug=False):
             spans.extend([buf.pop(y) for y in neighs if y in buf])
             neighs = list(chain(*[relations.get(y) for y in neighs]))    
             neighs = [x for x in neighs if x in buf]                
-        aspect = build_aspect(spans, raw_data, relevance, memo)
-        span_groups.append(spans)
-        aspect_list.append(aspect)
+        
+        # skip singleton span groups
+        if (len(spans) > 1 or 
+            spans[0].annot_type == AspectEnum.Context):            
+            aspect = build_aspect(spans, raw_data, relevance, memo)
+            span_groups.append(spans)
+            aspect_list.append(aspect)
     
     if debug:
         return aspect_list, dict(
@@ -74,3 +81,24 @@ def process_thread_annotations(annot_item, debug=False):
             text_spans=text_spans, span_groups=span_groups)
     else:
         return aspect_list
+
+def link_default_relations(relations: AspectRelations, text_spans: Dict[str, TextSpan]):
+    # only apply default relations when no relations present
+    if len(relations.relations) > 0:
+        return
+    
+    # apply when there are only three spans (E, A, V)
+    if len(text_spans) == 3:        
+        flag = 0    
+        for span_x in text_spans.values():
+            annot_type = span_x.annot_type
+            if annot_type == AspectEnum.Entity:
+                flag |= 1
+            elif annot_type == AspectEnum.Attribute:
+                flag |= 2
+            elif annot_type == AspectEnum.Evaluation:
+                flag |= 4
+        if flag == 7:
+            keys = list(text_spans.keys())
+            relations.add((keys[0], keys[1]))
+            relations.add((keys[0], keys[2]))
