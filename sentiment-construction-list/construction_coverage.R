@@ -10,7 +10,7 @@ new_data <- annotated_data %>%
 new_data <- na.omit(new_data)
 
 ## load cnstr list
-cnstr <- read_csv("data/constructions_0406.csv",
+cnstr <- read_csv("data/constructions_0415.csv",
                   col_names = FALSE)
 cnstr <- cnstr %>% pull(X1) # df to vector
 
@@ -19,7 +19,10 @@ regex = paste(cnstr, collapse="|")
 new_data$matches = sapply(str_extract_all(new_data$evaltext, regex), 
                           function(x) paste(x, collapse=";"))
 
-new_data_coverage <- new_data %>%
-  group_by(is_context, evaltext) %>%
-  arrange(desc(matches))
+new_data_coverage <- sum(new_data$matches != "")/length(new_data$matches)
   
+new_data <- new_data %>%
+  group_by(is_context) %>%
+  arrange(desc(is_context, matches))
+
+write.csv(new_data, 'match_data_0415.csv')
