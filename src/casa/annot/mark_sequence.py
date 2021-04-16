@@ -3,6 +3,7 @@ from itertools import chain
 from .annot_types import AspectEnum
 from lxml import objectify
 from lxml.html import html5parser
+import random
 
 def extract_sentence_cursor(xpath):
     cursor = xpath.replace("/div[1]/", "")
@@ -98,14 +99,49 @@ def make_div_element(html_str):
     objectify.deannotate(div, cleanup_namespaces=True)
     return div
 
-def make_sequence_from_aspects(aspects, html_text):
+def generate_cursors(parent_div):
+    lis = parent_div.xpath("//ol/li")
+    cursors = []
+    for li_idx in range(len(lis)):
+        cursors.append(f"ol[1]/li[{li_idx+1}]/text()")
+    return cursors
+
+def generate_noise_seq(cursor, target_elem):
+    rawtext = target_elem.xpath(cursor)        
+    rawtext = rawtext[0] if rawtext else ""
+    rawtext = clean_space(rawtext)    
+    rawtext = rawtext[:300]
+    tags = ["B-O"] * len(rawtext)
+    return (rawtext, tags)
+
+def make_sequence_from_aspects(aspects, html_text, noise_ratio=0.0):
     parent_div = make_div_element(html_text)
-    cursor_spans_pairs = collect_sentences(chain(*(x.spans for x in aspects)))    
+    cursor_spans_pairs = collect_sentences(chain(*(x.spans for x in aspects)))        
     seq_pairs = []
+    
     for cursor, spans in cursor_spans_pairs.items():
         pairs = mark_tokens(cursor, spans, parent_div)
         seq_pairs.extend(pairs)
-    return seq_pairs
+
+    if noise_ratio == 0.0:    
+        return seq_pairs
+
+    else:
+        cursor_pools = generate_cursors(parent_div)        
+        noise_pairs = []        
+
+        for cursor in cursor_pools:
+            if cursor in cursor_spans_pairs:
+                continue
+                        
+            if random.random() > noise_ratio:
+                continue
+            
+            noise_pair = generate_noise_seq(cursor, parent_div)
+            noise_pairs.append(noise_pair)
+            
+        return seq_pairs, noise_pairs
+    
 
 def print_seq_pair(pair):
     print(" ".join(f"{x}({t})" for x, t in zip(*pair)))
