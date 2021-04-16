@@ -1,9 +1,8 @@
-library(readr)
 library(dplyr)
 library(stringr)
 
 ## load all data
-annotated_data <- read_csv("data/aspect_tuples_20210406.2.csv")
+annotated_data <- readr::read_csv("data/aspect_tuples_20210406.2.csv")
 new_data <- annotated_data %>%
   select(is_context, evaltext) %>%
   filter(evaltext != '#ERROR!')
@@ -19,10 +18,10 @@ regex = paste(cnstr, collapse="|")
 new_data$matches = sapply(str_extract_all(new_data$evaltext, regex), 
                           function(x) paste(x, collapse=";"))
 
-new_data_coverage <- sum(new_data$matches != "")/length(new_data$matches)
-  
-new_data <- new_data %>%
-  group_by(is_context) %>%
-  arrange(desc(is_context, matches))
+sorted_data <- new_data %>%
+  arrange(is_context, desc(matches))
 
-write.csv(new_data, 'match_data_0415.csv')
+write.csv(sorted_data, 'match_data_0415.csv')
+
+## count coverage
+new_data_coverage <- sum(new_data$matches != "")/length(new_data$matches)
