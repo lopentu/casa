@@ -25,3 +25,7 @@ write.csv(sorted_data, 'match_data_0415.csv')
 
 ## count coverage
 new_data_coverage <- sum(new_data$matches != "")/length(new_data$matches)
+
+new_data %>%
+  group_by(is_context) %>%
+  summarise(n_matches = sum(matches == ""))
