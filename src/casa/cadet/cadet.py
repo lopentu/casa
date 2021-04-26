@@ -95,18 +95,16 @@ class Cadet:
         }
 
     def tokenize(self, text, verbose=False):
-        stopped = "▁、。?,與和的是用跟到"
+        stopped = "▁、。?,與在和的是用跟到只有"
         pat1 = re.compile(f"^[{stopped}]+")
         pat2 = re.compile(f"[{stopped}]+$")
 
-        def preproc(x):
-            if len(x) <= 1:
-                return x
-            else:
-                return pat1.sub("", pat2.sub("", x))
+        def preproc(x):            
+            return pat1.sub("", pat2.sub("", x))
 
         tokens = self.sp.encode(text.lower().strip(), out_type=str)
         tokens = [preproc(x) for x in tokens]
+        tokens = [x for x in tokens if x]
         if verbose:
             print("tokens: ", tokens)
         return tokens
