@@ -1,6 +1,8 @@
 import re
 from itertools import chain
-from .annot_types import AspectEnum
+from .annot_types import (AnnotAspect, AspectEnum, 
+                          SpanAnnot, TextSpan, FieldEnum)
+from typing import List
 from lxml import objectify
 from lxml.html import html5parser
 import random
@@ -113,6 +115,60 @@ def generate_noise_seq(cursor, target_elem):
     rawtext = rawtext[:300]
     tags = ["B-O"] * len(rawtext)
     return (rawtext, tags)
+
+def build_proofread_entry(aspect_x: AnnotAspect, span_x: TextSpan, field, cursor, rawtext):
+    rec = dict(
+                annot_type=span_x.annot_type.name,
+                norm_val=span_x.get_annot_value(field),
+                spantext=span_x.text,
+                rawtext=rawtext,
+                batch_idx=aspect_x.batch_idx,
+                thread_idx=aspect_x.thread_idx,
+                serial=aspect_x.serial,
+                cursor=cursor,
+                span_id=span_x.annot_id
+            )
+    return rec
+
+def make_proofread(aspects: List[AnnotAspect], html_text: str):
+    parent_div = make_div_element(html_text)    
+    work_buf = {}
+    data_list = []
+
+    for aspect_x in aspects:
+        # make attribute and entity spans for proofread only
+        entity_span = aspect_x.get_aspect_span(AspectEnum.Entity)
+        attrib_span = aspect_x.get_aspect_span(AspectEnum.Attribute)
+        spans = entity_span + attrib_span
+        
+        for span_x in spans:
+            cursor = extract_sentence_cursor(span_x.start)
+            rawtext = parent_div.xpath(cursor)    
+            rawtext = rawtext[0] if rawtext else ""
+            rawtext = clean_space(rawtext)
+            
+            # remove the same textspan annotated in the same text
+            if cursor not in work_buf:
+                work_buf[cursor] = rawtext
+
+            if span_x.text in work_buf[cursor]:
+                work_buf[cursor] = work_buf[cursor].replace(span_x.text, "", 1)
+            else:
+                continue
+
+            # There is a new instance in the text, continue making a span record
+            annot_type = span_x.annot_type
+            if annot_type in (AspectEnum.Attribute, AspectEnum.Context):
+                data_list.append(
+                    build_proofread_entry(aspect_x, span_x, FieldEnum.NormAttr,
+                                    cursor, rawtext))
+            elif annot_type in (AspectEnum.Entity, AspectEnum.Context):
+                data_list.append(
+                    build_proofread_entry(aspect_x, span_x, FieldEnum.NormEnt,
+                                    cursor, rawtext))
+
+
+    return data_list
 
 def make_sequence_from_aspects(aspects, html_text, noise_ratio=0.0):
     parent_div = make_div_element(html_text)
