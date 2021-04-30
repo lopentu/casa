@@ -111,9 +111,7 @@ class TextSpan:
         obj.start_offset = values["startOffset"]
         obj.end_offset = values["endOffset"]
         obj.text = values["text"]
-        obj.meta = "\n".join(data.get("meta", {}).get("text", []))
-        if obj.meta:
-            print(obj.meta)
+        obj.meta = "\n".join(data.get("meta", {}).get("text", []))        
         html_label = values["htmllabels"][0]
         obj.annot_type = AspectEnum[html_label]
 
