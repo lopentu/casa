@@ -170,6 +170,44 @@ def make_proofread(aspects: List[AnnotAspect], html_text: str):
 
     return data_list
 
+def make_sequence_for_caprice(aspects, html_text, noise_ratio=0.5):
+    parent_div = make_div_element(html_text)
+    cursor_spans_pairs = collect_sentences(chain(*(x.spans for x in aspects)))        
+    seq_pairs = []
+    seq_labels = []
+    for cursor, spans in cursor_spans_pairs.items():
+        pairs = mark_tokens(cursor, spans, parent_div)
+        if len(pairs) != 1: # skip long text
+            continue        
+
+        labels = [x.get_annot_value(FieldEnum.Rating) for x in spans]
+        labels = [x for x in labels if x]
+        if (labels and
+            all(x==labels[0] for x in labels) and
+            labels[0] != 3):
+            # only include those sequence having appropriate labels
+            rating = int(labels[0])
+            assert len(pairs) == 1
+            seq_pairs.append(pairs[0])            
+            seq_labels.append(int(rating>3)+1)
+        else:
+            continue
+
+    cursor_pools = generate_cursors(parent_div)                
+
+    for cursor in cursor_pools:
+        if cursor in cursor_spans_pairs:
+            continue
+                    
+        if random.random() > noise_ratio:
+            continue
+        
+        noise_pair = generate_noise_seq(cursor, parent_div)
+        seq_pairs.append(noise_pair)
+        seq_labels.append(0)
+        
+    return seq_pairs, seq_labels
+
 def make_sequence_from_aspects(aspects, html_text, noise_ratio=0.0):
     parent_div = make_div_element(html_text)
     cursor_spans_pairs = collect_sentences(chain(*(x.spans for x in aspects)))        

@@ -45,7 +45,7 @@ class Cadet:
     def build_seed_matrix(self):
         candidates, seed_idxs = self.lexicon.flatten_candidates()
         self.seeds_matrix = np.vstack(
-            [self.kv.get_vector(x) for x in candidates])
+            [self.kv.get_vector(x, norm=True) for x in candidates])
         self.seed_idxs = np.array(seed_idxs)
 
     def reduce_scores(self, mat):
@@ -112,7 +112,7 @@ class Cadet:
     def build_seedsims_matrix(self, text, verbose=False):
         tokens = self.tokenize(text, verbose)
         tokens_matrix = np.vstack(
-                        [self.kv.get_vector(x)
+                        [self.kv.get_vector(x, norm=True)
                          for x in tokens
                          if x])
         seed_sims = tokens_matrix.dot(self.seeds_matrix.T)        
