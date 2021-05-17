@@ -39,7 +39,6 @@ class Cadet:
         lexicon = SeedLexicon.load(base_dir / "seeds.csv")
         sp = spm.SentencePieceProcessor(model_file=str(base_dir/"spm-2020.model"))
         kv = KeyedVectors.load(str(base_dir/"ft-2020.kv"))
-        kv.init_sims(replace=True)
         return Cadet(sp, kv, lexicon)
 
     def build_seed_matrix(self):

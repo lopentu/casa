@@ -25,7 +25,7 @@ def collect_sentences(spans):
             .append(span_x)
     return sentence_spans
 
-def fill_tag(start, end, annot_type, tags):
+def fill_tag(start, end, annot_type, tags, tag_suffix=""):
     tag_cat = {
         AspectEnum.Entity: "E",
         AspectEnum.Attribute: "A",
@@ -35,7 +35,7 @@ def fill_tag(start, end, annot_type, tags):
     
     for i in range(start, end):
         prefix = "B-" if i==start else "I-"
-        tags[i] = prefix+tag_cat
+        tags[i] = prefix+tag_cat+tag_suffix
 
 def clean_space(text):    
     text = text.replace("\n", ' ')
@@ -56,11 +56,14 @@ def split_long_sequence(text, tags):
         tags_list.append(tags[offset:])
     return text_list, tags_list
     
-def mark_tokens(cursor, spans, target_elem):
+def mark_tokens(cursor, spans, target_elem, other_with_B=True):
     rawtext = target_elem.xpath(cursor)    
     rawtext = rawtext[0] if rawtext else ""
     rawtext = clean_space(rawtext)    
-    tags = ["B-O"] * len(rawtext)
+    if other_with_B:
+        tags = ["B-O"] * len(rawtext)
+    else:
+        tags = ["O"] * len(rawtext)
     span_history = {}
     
     for span_x in spans:
@@ -81,7 +84,22 @@ def mark_tokens(cursor, spans, target_elem):
                 breakpoint()
 
             span_history[spantext] = idx            
-            fill_tag(idx, idx+len(spantext), span_x.annot_type, tags)
+            if span_x.annot_type != AspectEnum.Evaluation:
+                tag_suffix = ""
+            else:
+                rating = span_x.get_annot_value(FieldEnum.Rating)
+                try:
+                    rating = int(rating)
+                except ValueError:
+                    continue
+
+                if int(rating) > 3:
+                    tag_suffix = "P"
+                else:
+                    tag_suffix = "N"
+            
+
+            fill_tag(idx, idx+len(spantext), span_x.annot_type, tags, tag_suffix)
     
     if len(rawtext) < 300:        
         text_list, tags_list = [rawtext], [tags]
@@ -208,13 +226,13 @@ def make_sequence_for_caprice(aspects, html_text, noise_ratio=0.5):
         
     return seq_pairs, seq_labels
 
-def make_sequence_from_aspects(aspects, html_text, noise_ratio=0.0):
+def make_sequence_from_aspects(aspects, html_text, noise_ratio=0.0, other_with_B=True):
     parent_div = make_div_element(html_text)
     cursor_spans_pairs = collect_sentences(chain(*(x.spans for x in aspects)))        
     seq_pairs = []
     
     for cursor, spans in cursor_spans_pairs.items():
-        pairs = mark_tokens(cursor, spans, parent_div)
+        pairs = mark_tokens(cursor, spans, parent_div, other_with_B=other_with_B)
         seq_pairs.extend(pairs)
 
     if noise_ratio == 0.0:    

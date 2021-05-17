@@ -6,7 +6,16 @@ from scipy.cluster.hierarchy import linkage, dendrogram
 import torch
 from icecream import ic
 
-def custom_clustering(inst, s, pat, tagger_inst):
+def assign_pos_to_inst(inst, pos_logits, align_s2t):
+    pos_probs = np.zeros((len(align_s2t), pos_logits.shape[1]), dtype=np.float32)
+    for s_idx, (t_start, t_end) in enumerate(align_s2t):
+        logits_x = torch.sum(pos_logits[t_start:t_end, :], axis=0)
+        pos_probs[s_idx, :] = torch.softmax(logits_x, axis=0).numpy()
+    setattr(inst, "pos_probs", pos_probs)
+    return pos_probs
+
+
+def custom_clustering(inst, s, pat, tagger_inst, assign_pos=True):
     inst._update_s_cache(s)
     out = tagger_inst.soft_tag(s)
     wlogits = torch.cat(out[0])
@@ -14,6 +23,7 @@ def custom_clustering(inst, s, pat, tagger_inst):
     out_tokens = list(chain(*out[2]))
     wprobs = torch.softmax(wlogits, axis=1).numpy()[:,0]    
     p_wb_tokens = np.ones(len(tokens))
+    
     
     cur = [0, 0]
     buf = ""    
@@ -44,6 +54,9 @@ def custom_clustering(inst, s, pat, tagger_inst):
         align_s2t[token_i] = (cur[0], cur[1]+1)
         align_t2s[cur[0]:cur[1]+1] = token_i
     
+    # assign POS to instance
+    assign_pos_to_inst(inst, torch.cat(out[1]), align_s2t)
+
     mat = re.search(pat, s)    
     pat_spans = []
     if mat:

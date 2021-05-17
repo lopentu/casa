@@ -115,9 +115,10 @@ def process_shap_values(shap_value, group_threshold=1, separator=''):
         token_id_to_node_id_mapping = np.arange(M)
         collapsed_node_ids = np.arange(M)
 
-    return {"tokens": tokens, "values": values, "group_sizes": group_sizes,
+    return {"raw_tokens": shap_value.data,
+            "merged_tokens": tokens, "values": values, "group_sizes": group_sizes,
             "upper_values": upper_values, "lower_values": lower_values,
             "group_values": group_values, 
-            "max_values": max_values,
+            "max_values": max_values,            
             "token_id_to_node_id_mapping": token_id_to_node_id_mapping,
             "collapsed_node_ids": collapsed_node_ids}
