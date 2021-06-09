@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+	<title>Document</title>
+	<style>
+		#app {width: 80%; margin: auto;}
+		.control-box {position: fixed; top: 0px; background-color: #FFFA}
+    .content-wrap {margin-top: 30px;}
+    .wrap-tag { border-bottom: 2px solid black; font-size: 14pt; margin-top: 1%;}
+    .word-freq {       
+      font-size: 12pt; 
+      padding-left: 2%;}
+		.attr-name {font-size: 16pt; font-weight: 800;}        
+		.flex-container {
+      display: flex; margin: 2% 0%; position: relative;
+			flex-wrap: wrap; 
+			align-content: flex-start; justify-content: flex-start;
+      max-height: 300px; overflow-y: auto;
+			}
+    .attr-word{white-space: nowrap;}
+		.flex-item {margin: 0 1%; line-height: 120%}
+    .text-capsule {padding: 2px 5px; margin: 3px 5px;
+      border-radius: 5px; background-color: #DDD}		
+	</style>
+</head>
+
+<body>
+	<div id="app">      
+		<div class="control-box">
+			<input v-model="show_words" type="checkbox" id="check-word">
+			<label for="check-word">Words</label>
+			<input v-model="show_ngrams" type="checkbox" id="check-ngram">
+			<label for="check-ngram">Ngrams</label>
+			<input v-model="show_evals" type="checkbox" id="check-eval">
+			<label for="check-eval">Eval texts</label>
+		</div>
+		<div class="content-wrap">      
+      <div class="attr-block" v-for="(value, name) in onto">        
+        <div class="attr-name">{{name}}</div>
+
+        <div class="prop-wrap" v-if="show_words">
+          <div class="wrap-tag">Words</div>
+          <div class="words-wrap flex-container" v-if="show_words">            
+            <div class="attr-word flex-item" v-for="word in value.words">
+              <span>{{word[0][0]}}/{{word[0][1]}}</span><span class="word-freq">-{{word[1]}}</span>
+            </div>
+          </div>      
+        </div>
+
+        <div class="prop-wrap" v-if="show_ngrams">
+          <div class="wrap-tag">NGrams</div>
+          <div class="ngram-wrap flex-container">          
+            <div class="ngram-item flex-item" v-for="ng in value.ngrams">
+              {{ng[0]}}, {{ng[1]}}
+            </div>
+          </div>
+        </div>
+
+        <div class="prop-wrap" v-if="show_evals">
+          <div class="wrap-tag">Eval texts</div>
+          <div class="eval-wrap flex-container" v-if="show_evals">            
+            <div class="eval-item flex-item text-capsule" v-for="eval in value.evals">
+              {{eval}}
+            </div>
+          </div>
+        </div>
+      </div>
+		</div>
+	</div>    
+	<script type="text/javascript" src="js/eval_onto_annot.js"></script>
+</body>
+
+</html>
