@@ -48,9 +48,9 @@ def split_long_sequence(text, tags):
     offset = 0
     for match in re.finditer("[。？！?!)]+", text):
         mlen = match.end() - match.start()
-        text_list.append(text[offset:match.start()+mlen])
-        tags_list.append(tags[offset:match.start()+mlen])
-        offset = match.start()+mlen
+        text_list.append(text[offset:match.start()+mlen+1])
+        tags_list.append(tags[offset:match.start()+mlen+1])
+        offset = match.start()+mlen+1
     if offset < len(text):
         text_list.append(text[offset:])
         tags_list.append(tags[offset:])
