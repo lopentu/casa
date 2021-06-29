@@ -51,7 +51,10 @@ class SeedLexicon:
                 zip(self.__categories, self.__seeds)):
             if cat[0] != "SERVICE": 
                 continue
-            group_x = cat[level]
+            if level + 1 == 0:
+                group_x = tuple(cat[1:])
+            else:
+                group_x = tuple(cat[1:level+1])
             services.setdefault(group_x, []).append(idx)
         return services
 

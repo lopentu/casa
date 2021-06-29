@@ -5,6 +5,8 @@ import sentencepiece as spm
 from .seed_lexicon import SeedLexicon
 import numpy as np
 
+TOKENIZE_STOPPED = "▁、。?,與在和的是用跟到只有"
+
 def transform_scores(x):
 
     if np.any(x>0.99):
@@ -57,7 +59,7 @@ class Cadet:
         return vec
 
 
-    def detect(self, text, level=-1, topn=5, verbose=False):
+    def detect(self, text, level=-1, summary=True, topn=5, verbose=False):
         text = text[:self.max_len]
         sim_mat = self.build_seedsims_matrix(text, verbose)
         simvec = self.reduce_scores(sim_mat)
@@ -66,16 +68,18 @@ class Cadet:
         ent_scores = np.array([simvec[idxs].max()
                             for idxs in ent_idxs.values()])
         ent_probs = transform_scores(ent_scores)
+        ent_order = np.argsort(-ent_probs)
 
         srv_idxs = self.lexicon.get_services(level)
         srv_labels = list(srv_idxs.keys())
         srv_scores = np.array([simvec[idxs].max()
                         for idxs in srv_idxs.values()])
         srv_probs = transform_scores(srv_scores)
+        srv_order = np.argsort(-srv_probs)
 
         srv_seeds, srv_seeds_idxs = self.lexicon.get_service_seeds()
         srv_seeds_idxs = np.array(srv_seeds_idxs)
-        seed_scores = np.array(simvec[srv_seeds_idxs])
+        seed_scores = np.array(simvec[srv_seeds_idxs])        
         srv_seeds_probs = transform_scores(seed_scores)
         srv_seeds_order = np.argsort((-srv_seeds_probs))
 
@@ -84,17 +88,27 @@ class Cadet:
             print("srv_scores", srv_scores)
             print("seed_scores(topn)", seed_scores[srv_seeds_order][:topn])
 
-        return {
-            "entity": ent_labels,
-            "entity_probs": ent_probs,
-            "service": srv_labels,
-            "service_probs": srv_probs,
-            "seeds": [srv_seeds[i] for i in srv_seeds_order[:topn]],
-            "seed_probs": srv_seeds_probs[srv_seeds_order][:topn]
-        }
+        if summary:
+            return {
+                "entity": [ent_labels[i] for i in ent_order],
+                "entity_probs": ent_probs[ent_order],
+                "service": [srv_labels[i] for i in srv_order[:topn]],
+                "service_probs": srv_probs[srv_order][:topn],
+                "seeds": [srv_seeds[i] for i in srv_seeds_order[:topn]],
+                "seed_probs": srv_seeds_probs[srv_seeds_order][:topn]
+            }
+        else:
+            return {
+                "entity": ent_labels,
+                "entity_probs": ent_probs,
+                "service": srv_labels,
+                "service_probs": srv_probs,
+                "seeds": srv_seeds,
+                "seed_probs": srv_seeds_probs
+            }
 
     def tokenize(self, text, verbose=False):
-        stopped = "▁、。?,與在和的是用跟到只有"
+        stopped = TOKENIZE_STOPPED
         pat1 = re.compile(f"^[{stopped}]+")
         pat2 = re.compile(f"[{stopped}]+$")
 
