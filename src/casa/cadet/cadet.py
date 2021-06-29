@@ -7,7 +7,7 @@ import numpy as np
 
 TOKENIZE_STOPPED = "▁、。?,與在和的是用跟到只有"
 
-def transform_scores(x):
+def transform_scores(x, exact_only=False):
 
     if np.any(x>0.99):
         # there is/are exact hits in the scores, use winner-takes-all strategy
@@ -15,7 +15,10 @@ def transform_scores(x):
         x_trans[x>0.99] = 5*x_trans[x>0.99]
     else:
         # transform raw scores with bias set to 0.6 and scaling factor to 5
-        x_trans = 5*(x-0.6)
+        if exact_only:
+            x_trans = np.ones_like(x)
+        else:
+            x_trans = 2*(x-0.6)
 
     # softmax
     probs = np.exp(x_trans) / np.exp(x_trans).sum()
@@ -67,14 +70,14 @@ class Cadet:
         ent_labels = list(ent_idxs.keys())
         ent_scores = np.array([simvec[idxs].max()
                             for idxs in ent_idxs.values()])
-        ent_probs = transform_scores(ent_scores)
+        ent_probs = transform_scores(ent_scores, exact_only=True)
         ent_order = np.argsort(-ent_probs)
 
         srv_idxs = self.lexicon.get_services(level)
         srv_labels = list(srv_idxs.keys())
         srv_scores = np.array([simvec[idxs].max()
                         for idxs in srv_idxs.values()])
-        srv_probs = transform_scores(srv_scores)
+        srv_probs = transform_scores(srv_scores, exact_only=False)
         srv_order = np.argsort(-srv_probs)
 
         srv_seeds, srv_seeds_idxs = self.lexicon.get_service_seeds()
