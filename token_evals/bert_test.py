@@ -1,7 +1,7 @@
 '''
 ABSA: Bert aspect extraction test runner 
 input: a csv file containing 'text' column and 'id' column 
-output: a csv file of the input file with appended spans column, logits and true_predictions
+output: a csv file of the input file with appended spans column, a logits pkl and true_predictions pkl
 Usage: 
 python bert_test.py --test_file='/content/drive/MyDrive/指向情緒案/data/threads/cht2021-JanMay-op-every20-text.csv'\
                   --pretrained_path='/content/drive/MyDrive/指向情緒案/data/models/Bert_aspect_extraction/0523'\
