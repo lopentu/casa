@@ -5,7 +5,10 @@ import sentencepiece as spm
 from .seed_lexicon import SeedLexicon
 import numpy as np
 
-def transform_scores(x):
+TOKENIZE_STOPPED = "▁、。?,與在和的是用跟到只有"
+ALPHANUM_PAT = "[A-Za-z0-9]+"
+
+def transform_scores(x, exact_only=False):
 
     if np.any(x>0.99):
         # there is/are exact hits in the scores, use winner-takes-all strategy
@@ -13,7 +16,10 @@ def transform_scores(x):
         x_trans[x>0.99] = 5*x_trans[x>0.99]
     else:
         # transform raw scores with bias set to 0.6 and scaling factor to 5
-        x_trans = 5*(x-0.6)
+        if exact_only:
+            x_trans = np.ones_like(x)
+        else:
+            x_trans = 2*(x-0.6)
 
     # softmax
     probs = np.exp(x_trans) / np.exp(x_trans).sum()
@@ -26,6 +32,14 @@ class Cadet:
         self.lexicon = lexicon
         self.seed_idxs = []
         self.max_len = max_len
+
+        # make candidate patterns for segmentation
+        self.candids = set([y for x in lexicon.candidates for y in x])
+        candid_sorted = sorted(self.candids, key=lambda x: -len(x))        
+        all_candidates = "|".join([*candid_sorted, ALPHANUM_PAT])
+        all_candidates = re.sub(r"[+?.*\[\]()]", "", all_candidates)
+        self.candid_pat = re.compile("({})".format(all_candidates))
+
         self.build_seed_matrix()
 
     def __repr__(self):
@@ -57,7 +71,7 @@ class Cadet:
         return vec
 
 
-    def detect(self, text, level=-1, topn=5, verbose=False):
+    def detect(self, text, level=-1, summary=True, topn=5, verbose=False):
         text = text[:self.max_len]
         sim_mat = self.build_seedsims_matrix(text, verbose)
         simvec = self.reduce_scores(sim_mat)
@@ -65,17 +79,19 @@ class Cadet:
         ent_labels = list(ent_idxs.keys())
         ent_scores = np.array([simvec[idxs].max()
                             for idxs in ent_idxs.values()])
-        ent_probs = transform_scores(ent_scores)
+        ent_probs = transform_scores(ent_scores, exact_only=True)
+        ent_order = np.argsort(-ent_probs)
 
         srv_idxs = self.lexicon.get_services(level)
         srv_labels = list(srv_idxs.keys())
         srv_scores = np.array([simvec[idxs].max()
                         for idxs in srv_idxs.values()])
-        srv_probs = transform_scores(srv_scores)
+        srv_probs = transform_scores(srv_scores, exact_only=False)
+        srv_order = np.argsort(-srv_probs)
 
         srv_seeds, srv_seeds_idxs = self.lexicon.get_service_seeds()
         srv_seeds_idxs = np.array(srv_seeds_idxs)
-        seed_scores = np.array(simvec[srv_seeds_idxs])
+        seed_scores = np.array(simvec[srv_seeds_idxs])        
         srv_seeds_probs = transform_scores(seed_scores)
         srv_seeds_order = np.argsort((-srv_seeds_probs))
 
@@ -84,26 +100,37 @@ class Cadet:
             print("srv_scores", srv_scores)
             print("seed_scores(topn)", seed_scores[srv_seeds_order][:topn])
 
-        return {
-            "entity": ent_labels,
-            "entity_probs": ent_probs,
-            "service": srv_labels,
-            "service_probs": srv_probs,
-            "seeds": [srv_seeds[i] for i in srv_seeds_order[:topn]],
-            "seed_probs": srv_seeds_probs[srv_seeds_order][:topn]
-        }
+        if summary:
+            return {
+                "entity": [ent_labels[i] for i in ent_order],
+                "entity_probs": ent_probs[ent_order],
+                "service": [srv_labels[i] for i in srv_order[:topn]],
+                "service_probs": srv_probs[srv_order][:topn],
+                "seeds": [srv_seeds[i] for i in srv_seeds_order[:topn]],
+                "seed_probs": srv_seeds_probs[srv_seeds_order][:topn]
+            }
+        else:
+            return {
+                "entity": ent_labels,
+                "entity_probs": ent_probs,
+                "service": srv_labels,
+                "service_probs": srv_probs,
+                "seeds": srv_seeds,
+                "seed_probs": srv_seeds_probs
+            }
 
     def tokenize(self, text, verbose=False):
-        stopped = "▁、。?,與在和的是用跟到只有"
-        pat1 = re.compile(f"^[{stopped}]+")
-        pat2 = re.compile(f"[{stopped}]+$")
+        tokens = []
 
-        def preproc(x):            
-            return pat1.sub("", pat2.sub("", x))
-
-        tokens = self.sp.encode(text.lower().strip(), out_type=str)
-        tokens = [preproc(x) for x in tokens]
-        tokens = [x for x in tokens if x]
+        for seg in self.candid_pat.split(text.lower().strip()):
+            if seg in self.candids:
+                tokens.append(seg)
+            elif re.match(ALPHANUM_PAT, seg):
+                tokens.append(seg)
+            else:
+                pieces = self.sp.encode(seg.lower().strip(), out_type=str)
+                pieces = [x for x in pieces if x]
+                tokens.extend(pieces)        
         if verbose:
             print("tokens: ", tokens)
         return tokens
