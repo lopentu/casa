@@ -31,7 +31,7 @@ Vue.component('eval-edit', {
 var app = new Vue({
     el: '#app',
     created: function(){        
-        fetch('data/eval_ontology_raw_210605.json')            
+        fetch('data/eval_ontology_raw_210707.json')            
             .then(resp=>resp.text())
             .then(text=>{
                 text = text.replace(/NaN/g, "null");
