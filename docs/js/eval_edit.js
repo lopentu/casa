@@ -16,12 +16,12 @@ Vue.component('eval-edit', {
   <div class="eval-edit">
     <div class="eval-edit-item eval-edit-pos">
       <textarea class="ta-pos" v-bind:value="pos" 
-        v-on:change="update_eval('pos', $event.target.value)" 
+        v-on:input="update_eval('pos', $event.target.value)" 
         placeholder="補充正面詞彙"></textarea>
     </div>
     <div class="eval-edit-item eval-edit-neg">
       <textarea class="ta-neg" v-bind:value="neg" 
-      v-on:change="update_eval('neg', $event.target.value)"
+      v-on:input="update_eval('neg', $event.target.value)"
       placeholder="補充負面詞彙"></textarea>
     </div>
   </div>
