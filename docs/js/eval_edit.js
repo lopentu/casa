@@ -6,7 +6,7 @@ Vue.component('eval-edit', {
       neg: function() { return (this.evaldata && this.evaldata.neg) || "" } 
   },
   methods: {
-    update_eval: function(category, value) { 
+    update_eval: function(category, value) {       
       new_data = Object.assign({}, {pos: this.pos, neg: this.neg});
       new_data[category] = value;
       this.$emit('evalupdate', new_data);
@@ -16,12 +16,12 @@ Vue.component('eval-edit', {
   <div class="eval-edit">
     <div class="eval-edit-item eval-edit-pos">
       <textarea class="ta-pos" v-bind:value="pos" 
-        v-on:input="update_eval('pos', $event.target.value)" 
+        v-on:change="update_eval('pos', $event.target.value)" 
         placeholder="補充正面詞彙"></textarea>
     </div>
     <div class="eval-edit-item eval-edit-neg">
       <textarea class="ta-neg" v-bind:value="neg" 
-      v-on:input="update_eval('neg', $event.target.value)"
+      v-on:change="update_eval('neg', $event.target.value)"
       placeholder="補充負面詞彙"></textarea>
     </div>
   </div>
@@ -58,7 +58,7 @@ var app = new Vue({
       pageId: "first-editor",
       status: "載入中",
       onto: {},      
-      augdata: {"[通訊]國內電信漫遊": {pos: "positive", neg: "negative "}},
+      augdata: {},
     },
 
     methods: {
