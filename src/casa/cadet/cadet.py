@@ -6,6 +6,7 @@ from .seed_lexicon import SeedLexicon
 import numpy as np
 
 TOKENIZE_STOPPED = "▁、。?,與在和的是用跟到只有"
+ALPHANUM_PAT = "[A-Za-z0-9]+"
 
 def transform_scores(x, exact_only=False):
 
@@ -31,6 +32,14 @@ class Cadet:
         self.lexicon = lexicon
         self.seed_idxs = []
         self.max_len = max_len
+
+        # make candidate patterns for segmentation
+        self.candids = set([y for x in lexicon.candidates for y in x])
+        candid_sorted = sorted(self.candids, key=lambda x: -len(x))        
+        all_candidates = "|".join([*candid_sorted, ALPHANUM_PAT])
+        all_candidates = re.sub(r"[+?.*\[\]()]", "", all_candidates)
+        self.candid_pat = re.compile("({})".format(all_candidates))
+
         self.build_seed_matrix()
 
     def __repr__(self):
@@ -111,16 +120,17 @@ class Cadet:
             }
 
     def tokenize(self, text, verbose=False):
-        stopped = TOKENIZE_STOPPED
-        pat1 = re.compile(f"^[{stopped}]+")
-        pat2 = re.compile(f"[{stopped}]+$")
+        tokens = []
 
-        def preproc(x):            
-            return pat1.sub("", pat2.sub("", x))
-
-        tokens = self.sp.encode(text.lower().strip(), out_type=str)
-        tokens = [preproc(x) for x in tokens]
-        tokens = [x for x in tokens if x]
+        for seg in self.candid_pat.split(text.lower().strip()):
+            if seg in self.candids:
+                tokens.append(seg)
+            elif re.match(ALPHANUM_PAT, seg):
+                tokens.append(seg)
+            else:
+                pieces = self.sp.encode(seg.lower().strip(), out_type=str)
+                pieces = [x for x in pieces if x]
+                tokens.extend(pieces)        
         if verbose:
             print("tokens: ", tokens)
         return tokens
