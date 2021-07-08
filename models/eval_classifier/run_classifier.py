@@ -1,6 +1,14 @@
 '''
 ABSA: BERT sentiment classifer Trainer
-Usage: 
+Usage:(eg.) (colab-style)
+!python3 run_classifier.py --train_file /content/drive/MyDrive/指向情緒案/data/annot_data/annotated_data_bkup/20210707/aspect_tuples_20210707.csv\
+        --save_dir /content/drive/MyDrive/指向情緒案/data/models/BERT_eval_classifier/0708_0.759ctx\
+        --model_name 'bert-base-chinese'\
+        --valid_ratio 0.2\
+        --seed 2929\
+        --MAX_LEN 400\
+        --batch_size 100\
+        --epoch 15 
 
 2021.7.8
 '''

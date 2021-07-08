@@ -1,7 +1,12 @@
 '''
 ABSA: BERT sentiment classifer Test Runner
-Usage: 
-
+Usage (eg) (colab-style)
+!python3 test_classifier.py --test_file /content/drive/MyDrive/指向情緒案/data/annot_data/annotated_data_bkup/20210707/aspect_tuples_20210707.csv\
+        --model_path /content/drive/MyDrive/指向情緒案/data/models/BERT_eval_classifier/0708_0.759ctx\
+        --model_name 'bert-base-chinese'\
+        --MAX_LEN 400\
+        --eval_batch_size 100\
+        --save_dir ./test_results
 
 2021.7.8
 '''
@@ -21,9 +26,10 @@ def parse_args():
     parser.add_argument(
         "--test_file", 
         type=str, 
-        help="Path to a csv file containing training data, containing 'evaltext', 'is_context' columns\
+        help="Path to a csv file containing training data, containing 'evaltext' column\
             the default setting is a .csv similar to aspect_tuples.csv.\
-            If 'rating' col is provided, a acc score is calculated", 
+            If 'rating' col is provided, a acc score is calculated\
+            if 'is_context' col is provided, choose the True ones", 
     )
     
     parser.add_argument(
