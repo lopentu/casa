@@ -26,6 +26,7 @@ import time
 import random
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
+import wandb
 # from sklearn.metrics import classification_report
 
 logger = logging.getLogger(__name__)
@@ -35,12 +36,11 @@ def parse_args():
     parser.add_argument(
         "--train_file", 
         type=str, 
-        help="Path to a csv file containing training data, containing 'evaltext', 'rating', 'is_context' column\
-            the default setting is a .csv similar to aspect_tuples.csv", 
+        help="Path to a csv file containing training data, containing 'evaltext', 'rating' column", 
     )
     
-    parser.add_argument(
-        "--valid_ratio", type=float, default = 0.1, help="The split ratio of train_file to train set and dev set")
+    # parser.add_argument(
+    #     "--valid_ratio", type=float, default = 0.1, help="The split ratio of train_file to train set and dev set")
     
 
     parser.add_argument(
@@ -59,28 +59,28 @@ def parse_args():
 
     parser.add_argument(
         "--seed", 
-        type=int, 
+        type = int, 
         default = 0,
         help="random seed", 
     )
 
     parser.add_argument(
         "--batch_size",
-        default=32,
+        default = 32,
         type=int, 
         help="Training batch size",
     )
 
     parser.add_argument("--save_dir", 
-        type=str, 
-        default='./Results', 
+        type = str, 
+        default ='./Results', 
         help="Where to store the output results and the fine-tuned model."
     )
 
     parser.add_argument(
         "--epoch",
         type = int,
-        default= 15,
+        default= 10,
     )
 
     args = parser.parse_args()
@@ -117,58 +117,68 @@ def main(args):
     
     logger.info("***** Training *****")
     logger.info(f"  Task Name = Sentiment classification")
+    lr = 1e-5
+    wdecay = 5e-3
+    wandb.init(project='absa_bert_eval', entity='Nana2929')
+    config = wandb.config
+    config.learning_rate =lr
+    config.weight_decay = wdecay
+    config.model = args.model_name
+    config.batch_size = args.batch_size
+
 
     # Preparing train, test dataloders
     df = pd.read_csv(args.train_file)
-    df = df.dropna()
-    df = df[df['is_context'] == False]
-    df = df.reset_index()
-    polarity = pd.Series(to_pol(df['rating']), name = 'polarity')
-    concat = df['evaltext'].to_frame().join(polarity)
-    concat.to_csv(os.path.join(args.save_dir, 'train_file_clean.csv'))
-    
-    concat['evaltext'] = concat['evaltext'].apply(lambda x: x[:args.MAX_LEN])
-    X = concat['evaltext']
-    y = concat['polarity']
+    X = df['evaltext']
+    y = df['polarity']
 
-    # Stratification on validation 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = args.valid_ratio, stratify=y)
+    # df = df.dropna()
+    # df = df[df['is_context'] == False]
+    # df = df.reset_index()
+    # polarity = pd.Series(to_pol(df['rating']), name = 'polarity')
+    # concat = df['evaltext'].to_frame().join(polarity)
 
-    logger.info(f"  Training Data Size = {len(X_train)}")
-    logger.info(f"  Validation Data Size = {len(X_test)}")
+    # X = concat['evaltext']
+    # y = concat['polarity']
+
+    # concat['evaltext'] = concat['evaltext'].apply(lambda x: x[:args.MAX_LEN])
+    # # Stratification on validation 
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = args.valid_ratio, stratify=y)
+
+    # logger.info(f"  Training Data Size = {len(X_train)}")
+    # logger.info(f"  Validation Data Size = {len(X_test)}")
 
     tokenizer = BertTokenizerFast.from_pretrained(args.model_name)
     model = BertForSequenceClassification.from_pretrained(args.model_name, num_labels = 3)
     
-    valid_texts = X_test.tolist()
-    train_texts_LEN = len(X_train)
-    X_train = tokenizer.batch_encode_plus(
-        X_train.tolist(),
+    valid_texts = X.tolist()
+    train_texts_LEN = len(X)
+    tokenized_examples = tokenizer.batch_encode_plus(
+        X.tolist(),
         max_length = args.MAX_LEN,
         padding=True,
         truncation=True
     )
-    X_test = tokenizer.batch_encode_plus(
-        X_test.tolist(),
-        max_length = args.MAX_LEN,
-        padding=True,
-        truncation=True
-    )
+    # X_test = tokenizer.batch_encode_plus(
+    #     X_test.tolist(),
+    #     max_length = args.MAX_LEN,
+    #     padding=True,
+    #     truncation=True
+    # )
 
-    train_seq = torch.tensor(X_train['input_ids'])
-    train_mask = torch.tensor(X_train['attention_mask'])
-    train_y = torch.tensor(y_train.tolist(), dtype=torch.int64)
+    train_seq = torch.tensor(tokenized_examples['input_ids'])
+    train_mask = torch.tensor(tokenized_examples['attention_mask'])
+    train_y = torch.tensor(y.tolist(), dtype=torch.int64)
 
-    test_seq = torch.tensor(X_test['input_ids'])
-    test_mask = torch.tensor(X_test['attention_mask'])
-    test_y = torch.tensor(y_test.tolist()) 
+    # test_seq = torch.tensor(X_test['input_ids'])
+    # test_mask = torch.tensor(X_test['attention_mask'])
+    # test_y = torch.tensor(y_test.tolist()) 
    
     batch_size = args.batch_size
     train_data = TensorDataset(train_seq, train_mask, train_y)
-    test_data = TensorDataset(test_seq, test_mask, test_y)
-
     train_loader = DataLoader(train_data, batch_size=batch_size)
-    test_loader = DataLoader(test_data, batch_size=batch_size)
+    # test_data = TensorDataset(test_seq, test_mask, test_y)
+    # test_loader = DataLoader(test_data, batch_size=batch_size)
 
 
     myseed = args.seed
@@ -181,7 +191,7 @@ def main(args):
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
-    optimizer = AdamW(model.parameters(), lr = 1e-5, weight_decay = 5e-3)
+    optimizer = AdamW(model.parameters(), lr = lr, weight_decay = wdecay)
     epochs = args.epoch
     loss_fn = nn.CrossEntropyLoss()
 
@@ -210,7 +220,7 @@ def main(args):
 
         return avg_loss, avg_acc
     
-    def validate(dataloader = test_loader):
+    def validate(dataloader):
         model.eval()
         val_losses, val_acc = 0, 0
         PREDS, LABELS = [], []
@@ -240,6 +250,8 @@ def main(args):
     acc_dict = {'train': [], 'val': []}
     start = time.time()
 
+    wandb.watch(model)
+
     # training loop 
     for epoch in range(epochs):
         logger.info(f'  [{epoch+1}/{epochs}]')
@@ -247,30 +259,40 @@ def main(args):
         # training 
         model.train()
         train_loss, train_acc = train()
-        val_loss, val_acc, PREDS, LABELS = validate()
+        # val_loss, val_acc, PREDS, LABELS = validate()
         
         # append training and validation loss
         loss_dict['train'].append(train_loss)
-        loss_dict['val'].append(val_loss)
+        # loss_dict['val'].append(val_loss)
         acc_dict['train'].append(train_acc)
-        acc_dict['val'].append(val_acc)
+        # acc_dict['val'].append(val_acc)
         logger.info(f'  Training acc:{train_acc:.3f}, Training Loss: {train_loss:.3f}')
-        logger.info(f'  Validation acc:{val_acc:.3f}, Validation Loss: {val_loss:.3f}')
+        # logger.info(f'  Validation acc:{val_acc:.3f}, Validation Loss: {val_loss:.3f}')
         
-        if val_acc > best_acc:
-            best_acc = val_acc
-            D = {'texts': valid_texts , 'labels': trans(LABELS), 'preds':trans(PREDS)}
-            validation_preds = pd.DataFrame.from_dict(D)
-            validation_preds.to_csv(os.path.join(args.save_dir, "dev_predict.csv"))
+        # if val_acc > best_acc:
+        #     best_acc = val_acc
+        #     D = {'texts': valid_texts , 'labels': trans(LABELS), 'preds':trans(PREDS)}
+        #     validation_preds = pd.DataFrame.from_dict(D)
+        #     validation_preds.to_csv(os.path.join(args.save_dir, "dev_predict.csv"))
+        if epoch == (epochs-1):
             logger.info(f"  Saving model to {args.save_dir}.")
             model.save_pretrained(args.save_dir)
+        wandb.log({
+            "train loss": train_loss,
+            "train acc": train_acc,})
+            # "val loss": val_loss,
+            #"val acc": val_acc,
+
 
     end = time.time()
     Min = (end - start)//60
     Sec = (end-start) % 60
     logger.info(f'  Running {Min} min(s) and {(Sec):.2f} seconds.')
-    logger.info(f'  The saved model\'s val acc is {best_acc:.3f}.')
+    # logger.info(f'  The saved model\'s val acc is {best_acc:.3f}.')
+    # logger.info(f'  The saved model\'s val acc is {val_acc:.3f}.')
     logger.info(f'  Finished.')
+
+    
 
 if __name__ == "__main__":
     args = parse_args()

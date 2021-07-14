@@ -18,7 +18,8 @@ from transformers import AdamW
 import pandas as pd 
 import argparse 
 import logging
-
+import numpy as np 
+import pickle
 logger = logging.getLogger(__name__)
 
 def parse_args():
@@ -26,10 +27,9 @@ def parse_args():
     parser.add_argument(
         "--test_file", 
         type=str, 
-        help="Path to a csv file containing training data, containing 'evaltext' column\
+        help="Path to a csv file containing training data ('evaltext' column)\
             the default setting is a .csv similar to aspect_tuples.csv.\
-            If 'rating' col is provided, a acc score is calculated\
-            if 'is_context' col is provided, choose the True ones", 
+            If 'rating' col is provided, a acc score is calculated", 
     )
     
     parser.add_argument(
@@ -108,33 +108,25 @@ def main(args):
     logger.info(f"  Task Name = Sentiment classification")
 
     df = pd.read_csv(args.test_file)
-    # if the file comes with is_context, select the True rows
-    if 'is_context' in df:
-        df = df[df['is_context'] == True] 
+
+
     df = df.dropna()
     df = df.reset_index()
     # if the file comes with gold labels
     GOLD = False
-    if 'rating' in df:
+    if 'polarity' in df:
         GOLD = True
-        df= df[['evaltext', 'rating']]
-        polarity = pd.Series(to_pol(df['rating']), name = 'polarity')
-        df= df['evaltext'].to_frame().join(polarity)
     else: df= df[['evaltext']]
 
-    df = df.reset_index()
-    df.to_csv(os.path.join(args.save_dir, 'test_file_clean.csv'), index = False)
+    # df.to_csv(os.path.join(args.save_dir, 'test_file_clean.csv'), index = False)
     
     
     LEN = len(df)
     logger.info(f"  Test size = {LEN}")
-    
     tokenizer = BertTokenizerFast.from_pretrained(args.model_name)
     model = BertForSequenceClassification.from_pretrained(args.model_path, num_labels = 3)
 
     MAX_LEN = args.MAX_LEN
-    
-    
     
     tokenized_examples = tokenizer.batch_encode_plus(
         df['evaltext'].tolist(),
@@ -142,6 +134,7 @@ def main(args):
         padding=True,
         truncation=True
     )
+
 
     seq = torch.tensor(tokenized_examples['input_ids'])
     mask = torch.tensor(tokenized_examples['attention_mask'])
@@ -158,7 +151,8 @@ def main(args):
     # Testing 
     model.eval()
     test_acc = 0
-    PREDS, LABELS = [], []
+    PREDS, LABELS, LOGITS = [], [], []
+    # LOGITS = np.zeros(shape=(LEN+1,3))
     for step, batch in enumerate(test_loader):
 
         # push the batch to gpu
@@ -166,18 +160,27 @@ def main(args):
         sent_id, mask, label = batch
 
         with torch.no_grad():
-          pred = model(sent_id, mask).logits
-          _, pred2 = torch.max(pred, 1)
-          PREDS.extend(pred2.cpu().tolist())
-          if GOLD:
-              LABELS.extend(label.cpu().tolist())
-              assert len(PREDS) == len(LABELS)
-              test_acc += (pred2.cpu() == label.cpu()).sum().item()
-        
+            pred = model(sent_id, mask).logits
+            _, pred2 = torch.max(pred, 1)
+            # saving logits/unnormalized probabilities of 3 classes
+            
+            LOGITS.extend(pred.cpu().numpy())
+            # saving the predicted classes 
+            PREDS.extend(pred2.cpu().tolist())
+            if GOLD:
+                LABELS.extend(label.cpu().tolist())
+                assert len(PREDS) == len(LABELS)
+                test_acc += (pred2.cpu() == label.cpu()).sum().item()
+    # turn all training data logits into numpy array 
+    LOGITS = np.vstack(LOGITS)
     D = {'texts': df['evaltext'] , 'labels':trans(LABELS), 'preds':trans(PREDS)}
     if GOLD:
-        logger.info(f"  Test acc = {(test_acc / len(df)):.3f}")
+        logger.info(f'  Test acc = {(test_acc / len(df)):.3f}')
+    logger.info(f'  Saving logits of shape {LOGITS.shape} to Logits.pkl...')
+    with open(os.path.join(args.save_dir, 'Logits.pkl'), 'wb') as f:
+        pickle.dump(LOGITS, f)
     preds = pd.DataFrame.from_dict(D)
+    logger.info(f'  Saving predictions to {args.outfile}...')
     preds.to_csv(os.path.join(args.save_dir, args.outfile))
     
     logger.info(f'  Finished.')
