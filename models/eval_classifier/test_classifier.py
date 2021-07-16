@@ -7,14 +7,16 @@ Usage (eg) (colab-style)
         --MAX_LEN 400\
         --eval_batch_size 100\
         --save_dir ./test_results
-
-2021.7.8
+Revision History: 
+2021.7.8 First ver.
+2021.7.16 Turning into a general tester (input preproc)
+2021.7.17 Saving pred probs into df; add equal_test column 
 '''
 import os
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from transformers import BertTokenizerFast, AutoModel, BertForSequenceClassification
-from transformers import AdamW
+from torch import nn
 import pandas as pd 
 import argparse 
 import logging
@@ -151,8 +153,9 @@ def main(args):
     # Testing 
     model.eval()
     test_acc = 0
-    PREDS, LABELS, LOGITS = [], [], []
-    # LOGITS = np.zeros(shape=(LEN+1,3))
+    PREDS, LABELS, PROBS = [], [], []
+
+    softmax = nn.Softmax()
     for step, batch in enumerate(test_loader):
 
         # push the batch to gpu
@@ -161,27 +164,33 @@ def main(args):
 
         with torch.no_grad():
             pred = model(sent_id, mask).logits
-            _, pred2 = torch.max(pred, 1)
-            # saving logits/unnormalized probabilities of 3 classes
             
-            LOGITS.extend(pred.cpu().numpy())
+            # saving probabilities of pred class
+            pred_probs = softmax(pred)
+            max_probs, max_classes = torch.max(pred_probs, 1)
+            # print(pred_probs[0])
+            # print(max_probs[0])
+            PROBS.extend(max_probs.cpu().numpy())
             # saving the predicted classes 
-            PREDS.extend(pred2.cpu().tolist())
+            PREDS.extend(max_classes.cpu().tolist())
             if GOLD:
                 LABELS.extend(label.cpu().tolist())
                 assert len(PREDS) == len(LABELS)
-                test_acc += (pred2.cpu() == label.cpu()).sum().item()
-    # turn all training data logits into numpy array 
-    LOGITS = np.vstack(LOGITS)
-    D = {'texts': df['evaltext'] , 'labels':trans(LABELS), 'preds':trans(PREDS)}
+                test_acc += (max_classes.cpu() == label.cpu()).sum().item()
+    # to numpy array  
+    PROBS = np.vstack(PROBS)
+    PROBS = np.squeeze(PROBS)
+    D = {'texts': df['evaltext'] , 'labels':trans(LABELS), 'preds':trans(PREDS), 'probs':PROBS.tolist()}
+    
     if GOLD:
         logger.info(f'  Test acc = {(test_acc / len(df)):.3f}')
-    logger.info(f'  Saving logits of shape {LOGITS.shape} to Logits.pkl...')
-    with open(os.path.join(args.save_dir, 'Logits.pkl'), 'wb') as f:
-        pickle.dump(LOGITS, f)
-    preds = pd.DataFrame.from_dict(D)
+    logger.info(f'  Saving probabilities of shape {PROBS.shape} to PROBS.pkl...')
+    with open(os.path.join(args.save_dir, 'PROBS.pkl'), 'wb') as f:
+        pickle.dump(PROBS, f)
+    outfile = pd.DataFrame.from_dict(D)
+    outfile['IsCorrect'] = np.where(outfile['preds'] == outfile['labels'], 1, 0)
     logger.info(f'  Saving predictions to {args.outfile}...')
-    preds.to_csv(os.path.join(args.save_dir, args.outfile))
+    outfile.to_csv(os.path.join(args.save_dir, args.outfile))
     
     logger.info(f'  Finished.')
 
