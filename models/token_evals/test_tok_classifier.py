@@ -13,7 +13,7 @@ import os
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import TensorDataset, DataLoader
-from transformers import BertTokenizerFast, AutoModel, BertForTokenClassification
+from transformers import BertTokenizerFast, AutoModel, BertForSeqeunceClassification
 import pickle
 import pandas as pd 
 import argparse 
@@ -85,7 +85,9 @@ def main(args):
     df = pd.read_csv(args.test_file)
 
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name)
-    model = BertForTokenClassification.from_pretrained(args.pretrained_path, num_labels = 5)
+    model = BertForSequenceClassification.from_pretrained(args.pretrained_path, num_labels = 5)
+    
+    
     Original_data_size = len(df)
     df = df[df['text'].apply(lambda x: isinstance(x, str))]
     df = df.reset_index(drop = True)
