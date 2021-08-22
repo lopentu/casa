@@ -5,7 +5,7 @@ import time
 import re
 import numpy as np
 import torch
-
+import pickle 
 class MTBert:
 
     def __init__(self):
@@ -196,6 +196,10 @@ class MTBert:
         
         true_predictions = [[self.label_list[p] for (p, inpid) in zip(predsent, inpidsent) if inpid not in self.spectoks] 
                             for predsent, inpidsent in zip(t1records['preds'], t1records['input_ids'])]
+        
+        with open(f'./span_prediction.pkl', 'wb') as f:
+            pickle.dump(true_predictions, f)
+        
         spidx, spans, spanpols = self.findspans(input, true_predictions) 
         
         t1records['preds']= np.vstack(t1records['preds']) # 
