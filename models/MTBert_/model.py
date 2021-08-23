@@ -104,10 +104,15 @@ class MTBert:
 
         t1records = {'spans':[], 'span_idxs':[]}
         t2records = {'pol':[], 'probs':[]}
-        X = self.tokenizer(X, truncation = True, is_split_into_words = True, padding = 'max_length', return_tensors="pt") 
+        X = self.tokenizer(X, truncation = True, is_split_into_words = True, padding = True, max_length = 300, return_tensors="pt") 
         X.to(self.device)
+        
+        s = time.time()
         with torch.no_grad():
             logits = self.model(**X).logits.view(-1, 5)
+        t = time.time()
+        
+
         probs = torch.softmax(logits, axis=1).squeeze()
         _, pred = torch.max(probs, -1)
         npprobs = probs.cpu().numpy()
@@ -139,46 +144,62 @@ class MTBert:
         t2records['probs'] = merged_probs.cpu().numpy()
 
         # # --- organize ---
-        return self.summarize(input, t1records, t2records, spidx, spans, spanpols, isbatch = False) 
+        return (t-s), self.summarize(input, t1records, t2records, spidx, spans, spanpols, isbatch = False) 
     
     def bpredict(self, input, batch_size = 100): 
         '''batch prediction
         input: a list of strings
         return: a list of dictionaries'''
         start = time.time()
-
+        MAXLEN = 300
         self.model.eval()
         texts = [list(x) for x in input]
         tok_X = self.tokenizer(
             texts, 
-            max_length=512,
-            padding ='max_length',
-            truncation=True,
+            max_length = MAXLEN,
+            padding = True,
+            truncation = True,
             is_split_into_words=True, 
         )
 
         test_set = TensorDataset(torch.tensor(tok_X['input_ids']), torch.tensor(tok_X['attention_mask']))
         test_loader = DataLoader(test_set, batch_size = batch_size, shuffle=False, pin_memory=True)
+        DATASIZE = len(test_set)
+        t1records = {'input_ids':np.zeros((DATASIZE, MAXLEN, )), 'preds':np.zeros((DATASIZE, MAXLEN,)), 'logits':np.zeros((DATASIZE, MAXLEN, 5))}
+        t2records = {'preds':np.zeros((DATASIZE, )), 'probs':np.zeros((DATASIZE, 3))}
         
-        t1records = {'input_ids':[], 'preds':[], 'logits':[]}
-        t2records = {'preds':[], 'probs':[]}
-        for batch in test_loader:
+        prev_loc = 0
+        final_batch_idx = len(test_loader) - 1 
+        for i, batch in enumerate(test_loader):
+            
             with torch.no_grad():
+                
                 input_ids = batch[0].to(self.device) # input_ids
                 attention_mask = batch[1].to(self.device)
                 
                 logits = self.model(input_ids, attention_mask=attention_mask).logits
+                
+                inference_runtime+= (t-s)
                 active_loss = attention_mask.view(-1) == 1
                 # getting active logits
                 active_logits = logits.view(-1, 5) 
                 
                 # # ---task1: token extraction --- 
                 
+                
                 _, pred = torch.max(logits , -1)
-                # print('pred shape:', pred.shape)
-                t1records['preds'].extend(pred.cpu().numpy()) # 
-                t1records['input_ids'].extend(input_ids.cpu().numpy()) # for span matching 
-                t1records['logits'].extend(logits.cpu().numpy())
+                print('pred shape:', pred.shape)
+                print('input_ids shape:', pred.shape)
+                print('logits shape:', input_ids.shape)
+                
+                loc = (i+1)*batch_size if i != final_batch_idx else None 
+                t1records['preds'][prev_loc:loc,:] = pred.cpu().numpy()
+                t1records['input_ids'][prev_loc:loc,:] = input_ids.cpu().numpy()
+                t1records['logits'][prev_loc:loc,:,:] = logits.cpu().numpy()
+                
+                # t1records['preds'].extend(pred.cpu().numpy()) # 
+                # t1records['input_ids'].extend(input_ids.cpu().numpy()) # for span matching 
+                # t1records['logits'].extend(logits.cpu().numpy())
                 
                 # # --- task 2: polarity classification ---
                 
@@ -186,12 +207,15 @@ class MTBert:
                 N = active_logits[:,[0,2]].sum(1)/2
                 O = active_logits[:,[4]].sum(1)
                 
-                merged_logits= torch.stack([O, P, N], dim = 1)[::512] #0: O, 1: P, 2: N
+                merged_logits= torch.stack([O, P, N], dim = 1)[::MAXLEN] #0: O, 1: P, 2: N
                 merged_probs = torch.softmax(merged_logits, axis=1).squeeze()
-                
+
+
                 _, pred = torch.max(merged_logits, -1)
-                t2records['preds'].append(pred.cpu().numpy())
-                t2records['probs'].append(merged_probs.cpu().numpy())
+                t2records['preds'][prev_loc:loc] = pred.cpu().numpy()
+                t2records['probs'][prev_loc:loc, :] = merged_probs.cpu().numpy()
+                
+                prev_loc = loc
         
         
         true_predictions = [[self.label_list[p] for (p, inpid) in zip(predsent, inpidsent) if inpid not in self.spectoks] 
@@ -202,14 +226,15 @@ class MTBert:
         
         spidx, spans, spanpols = self.findspans(input, true_predictions) 
         
-        t1records['preds']= np.vstack(t1records['preds']) # 
-        t1records['input_ids']= np.vstack(t1records['input_ids']) # for span matching 
+        # t1records['preds']= np.concatenate(t1records['preds'], axis = 0) # 
+        # t1records['input_ids']= np.concatenate(t1records['input_ids'], axis = 0) # for span matching 
         
-        t2records['preds'] = np.vstack(t2records['preds']).flatten()
-        t2records['probs'] = np.vstack(t2records['probs'])
+        # t2records['preds'] = np.concatenate(t2records['preds'], axis = 0).flatten() # (900, )
+        # t2records['probs'] = np.concatenate(t2records['probs'], axis = 0) # (900, 3)
+        
         end = time.time()
         total = end-start
         
         print(f'Total runtime: {total//60} mins {total%60:.3f} secs.')
-        return self.summarize(input = input, rec1 = t1records, rec2 = t2records, \
+        return inference_runtime, self.summarize(input = input, rec1 = t1records, rec2 = t2records, \
                             spidx = spidx, spans = spans, sppols = spanpols, isbatch = True)
