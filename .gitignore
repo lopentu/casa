@@ -173,3 +173,4 @@ dmypy.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,vscode
 models/MTBert_/model_v0.py
+models/MTBert_/model_v1.py
