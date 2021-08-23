@@ -121,7 +121,7 @@ class MTBert:
 
         # # --- task 1: token extraction ---
         
-        print('logits shape:', logits.shape)
+        # print('logits shape:', logits.shape)
         # print('prediction shape:', pred.shape)
         t1records = {'pred':[], 'probs':[], 'input_ids':[]} 
         t1records['pred'].extend(pred)
@@ -152,6 +152,7 @@ class MTBert:
         '''batch prediction
         input: a list of strings
         return: a list of dictionaries'''
+
         start = time.time()
         MAXLEN = 300
         self.model.eval()
@@ -211,20 +212,20 @@ class MTBert:
                 
                 # # --- task 2: polarity classification ---
                 probs = torch.softmax(logits_t, axis=-1)
-                print('probs shape:', probs.shape)
+                # print('probs shape:', probs.shape)
                 P = probs[:,:, [1,3]].sum(-1)/2 
                 N = probs[:,:, [0,2]].sum(-1)/2
                 O = probs[:,:, [4]].sum(-1)
-                print('P shape:', P.shape)
-                print('N shape:', N.shape)
-                print('O shape:', O.shape)
+                # print('P shape:', P.shape)
+                # print('N shape:', N.shape)
+                # print('O shape:', O.shape)
                 merged_probs= torch.stack([O, P, N], dim = -1)[:, ::MAXLEN] #0: O, 1: P, 2: N
                 
 
                 merged_probs = merged_probs.cpu().numpy().squeeze()
-                print('mprobs shape:', merged_probs.shape)
+                # print('mprobs shape:', merged_probs.shape)
                 pred = np.argmax(merged_probs, axis = -1).squeeze()
-                print('pred shape:', pred.shape)
+                # print('pred shape:', pred.shape)
                 t2records['preds'][prev_loc:loc] = pred
                 t2records['probs'][prev_loc:loc, :] = merged_probs
                 
