@@ -148,13 +148,15 @@ class MTBert:
         
         return (t-s), self.summarize(input, t1records, t2records, spidx, spans, spanpols, isbatch = False) 
     
-    def bpredict(self, input, batch_size = 100): 
+    def bpredict(self, input, batch_size = 100, max_len = 300): 
         '''batch prediction
         input: a list of strings
         return: a list of dictionaries'''
 
+        
+        MAXLEN = max_len
+        DATASIZE = len(input)
         start = time.time()
-        MAXLEN = 300
         self.model.eval()
         texts = [list(x) for x in input]
         tok_X = self.tokenizer(
@@ -164,10 +166,9 @@ class MTBert:
             truncation = True,
             is_split_into_words=True, 
         )
-
         test_set = TensorDataset(torch.tensor(tok_X['input_ids']), torch.tensor(tok_X['attention_mask']))
         test_loader = DataLoader(test_set, batch_size = batch_size, shuffle=False, pin_memory=True)
-        DATASIZE = len(test_set)
+        
         t1records = {'input_ids':np.zeros((DATASIZE, MAXLEN, )), 'preds':np.zeros((DATASIZE, MAXLEN,)), 'logits':np.zeros((DATASIZE, MAXLEN, 5))}
         t2records = {'preds':np.zeros((DATASIZE, )), 'probs':np.zeros((DATASIZE, 3))}
         getpredtime1, getpredtime2 = 0, 0
@@ -187,7 +188,6 @@ class MTBert:
                 active_logits = logits.view(-1, 5) 
                 
                 # # ---task1: token extraction --- 
-                
                 
                 
                 # print('pred shape:', pred.shape)
@@ -220,7 +220,6 @@ class MTBert:
                 # print('N shape:', N.shape)
                 # print('O shape:', O.shape)
                 merged_probs= torch.stack([O, P, N], dim = -1)[:, ::MAXLEN] #0: O, 1: P, 2: N
-                
 
                 merged_probs = merged_probs.cpu().numpy().squeeze()
                 # print('mprobs shape:', merged_probs.shape)
