@@ -70,10 +70,17 @@ class Cadet:
         
         return vec
 
+    def align_tokens_attrib(self, tokens, sim_mat):
+        seeds = self.lexicon.seeds        
+        tokens_attrib = {}
+        for r, c in zip(*np.where(sim_mat>0.99)):
+            tokens_attrib.setdefault(seeds[c], []).append(r)
+        return tokens_attrib
 
     def detect(self, text, level=-1, summary=True, topn=5, verbose=False):
         text = text[:self.max_len]
-        sim_mat = self.build_seedsims_matrix(text, verbose)
+        sim_mat, tokens = self.build_seedsims_matrix(text, verbose)
+        tokens_attrib = self.align_tokens_attrib(tokens, sim_mat)
         simvec = self.reduce_scores(sim_mat)
         ent_idxs = self.lexicon.get_entities()
         ent_labels = list(ent_idxs.keys())
@@ -107,7 +114,9 @@ class Cadet:
                 "service": [srv_labels[i] for i in srv_order[:topn]],
                 "service_probs": srv_probs[srv_order][:topn],
                 "seeds": [srv_seeds[i] for i in srv_seeds_order[:topn]],
-                "seed_probs": srv_seeds_probs[srv_seeds_order][:topn]
+                "seed_probs": srv_seeds_probs[srv_seeds_order][:topn],
+                "tokens": tokens,
+                "tokens_attrib": tokens_attrib
             }
         else:
             return {
@@ -116,7 +125,9 @@ class Cadet:
                 "service": srv_labels,
                 "service_probs": srv_probs,
                 "seeds": srv_seeds,
-                "seed_probs": srv_seeds_probs
+                "seed_probs": srv_seeds_probs,
+                "tokens": tokens,
+                "tokens_attrib": tokens_attrib
             }
 
     def tokenize(self, text, verbose=False):
@@ -153,4 +164,4 @@ class Cadet:
             if np.any(mask):                                
                 Z[:, i] = np.max(seed_sims[:, mask], axis=1)
 
-        return Z
+        return Z, tokens
