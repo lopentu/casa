@@ -114,7 +114,7 @@ class MTBert:
         
         probs = torch.softmax(logits, axis=1).squeeze()
         _, pred = torch.max(probs, -1)
-        npprobs = probs.cpu().numpy()
+        probs = probs.cpu()
         
         pred = pred.cpu().numpy()
         
@@ -133,16 +133,17 @@ class MTBert:
         spidx, spans, spanpols = self.findspans([input], true_predictions) 
 
         # # --- task 2: polarity classification ---
+                
         # getting task 2 prediction
         t2records = {'preds':[]}
-        P = npprobs[:,[1,3]].sum(1)/2
-        N = npprobs[:,[0,2]].sum(1)/2
-        O = npprobs[:,[4]].sum(1)
+        P = probs[:,[1,3]].sum(1)/2
+        N = probs[:,[0,2]].sum(1)/2
+        O = probs[:,[4]].sum(1)
         merged_probs = torch.stack([O, P, N], dim = 1)[0]
 
         _, pred = torch.max(merged_probs, -1)
-        t2records['preds'].append(pred.cpu().item())
-        t2records['probs'] = merged_probs.cpu().numpy()
+        t2records['preds'].append(pred.item())
+        t2records['probs'] = merged_probs.numpy()
 
         # # --- organize ---
         
