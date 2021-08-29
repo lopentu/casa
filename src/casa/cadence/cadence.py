@@ -1,7 +1,9 @@
 import json
 import re
 import numpy as np
+from pathlib import Path
 import torch
+import logging
 from ..cadet import Cadet
 from ..crystal import Crystal
 from ..MTBert import MTBert
@@ -14,14 +16,22 @@ from .resolvers import (
 
 class Cadence:
     def __init__(self, config_path):
+        logger = logging.getLogger("casa.Cadence")
         with open(config_path, "r", encoding="UTF-8") as fin:
-            config = json.load(fin)
-        self.cadet = Cadet.load(config.cadet_path)
-        self.crystal = Crystal.load(config.crystal_path)
-        self.mt_bert = MTBert.load(config.mtbert_path)
+            config = json.load(fin)     
+        base_dir = config_path.parent   
+        logger.info("Loading Cadet")
+        self.cadet = Cadet.load(base_dir/config["cadet_path"])        
+
+        logger.info("Loading Crystal")
+        self.crystal = Crystal.load(base_dir/config["crystal_path"])
+
+        logger.info("Loading MTBert")
+        self.mt_bert = MTBert.load(base_dir/config["mtbert_path"])
     
     @classmethod
     def load(cls, config_path):
+        config_path = Path(config_path)
         inst = Cadence(config_path)
         return inst
             
@@ -55,7 +65,7 @@ class Cadence:
 
     def analyze(self, intxt, 
                 strategy=CadenceResolveStrategy.Simple):
-        out = self.process()
+        out = self.process(intxt)
         if strategy == CadenceResolveStrategy.Simple:
             return CadenceSimpleResolver().resolve(out)
         if strategy == CadenceResolveStrategy.Multiple:
