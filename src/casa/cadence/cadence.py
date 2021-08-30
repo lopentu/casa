@@ -63,14 +63,13 @@ class Cadence:
         out = CadenceOutput(cadet_res, crystal_res, mtbert_res)
         return out
 
-    def analyze(self, intxt, 
-                strategy=CadenceResolveStrategy.Simple):
+    def analyze(self, intxt, strategy="simple"):
         out = self.process(intxt)
-        if strategy == CadenceResolveStrategy.Simple:
+        if strategy.lower() == "simple":
             return CadenceSimpleResolver().resolve(out)
-        if strategy == CadenceResolveStrategy.Multiple:
+        if strategy.lower() == "multiple":
             return CadenceMultiResolver().resolve(out)
-        if strategy == CadenceResolveStrategy.BertOnly:
+        if strategy.lower() == "bertonly":
             return CadenceBertOnlyResolver().resolve(out)
         else:
             raise ValueError("Unsupported strategy")

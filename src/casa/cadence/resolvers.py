@@ -95,6 +95,21 @@ class CadenceBertOnlyResolver(CadetResolverMixin):
     def __init__(self):
         pass
     
-    def resolve(self, out: CadenceOutput):  
-        print("[WARN] CadenceBertOnlyResolver is not implemented")
+    def resolve(self, out: CadenceOutput):                    
+        op_cadet = out.cadet
+        op_mtbert = out.mt_bert
+        cadet_det = self.resolve_cadet(op_cadet)
+        # aspect: List[entity, service, polarity, aspect_source, polarity_source]
+        fASP_SRC = 3
+        fPOL_SRC = 4
+        aspect = [cadet_det[0], cadet_det[1], -1, "cadet", "none"]
+
+        # skip crystal result
+        
+        # use mt_bert seq result
+        aspect[2] = op_mtbert["seq_polarity"]
+        aspect[fPOL_SRC] = "mtbert"
+        
+        out.aspects = [aspect]
+
         return out
