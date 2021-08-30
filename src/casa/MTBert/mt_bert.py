@@ -125,11 +125,12 @@ class MTBert:
         with torch.no_grad():
             logits = self.model(**X).logits.view(-1, 5)
 
-        logits = logits.cpu()
-        P = logits[:,[1,3]].sum(1)/2
-        N = logits[:,[0,2]].sum(1)/2
-        O = logits[:,[4]].sum(1)
+        logits = logits.cpu()        
+        P = logits[:,[1,3]].sum(1)
+        N = logits[:,[0,2]].sum(1)
+        O = logits[:,[4]].sum(1)        
         merged_logits = torch.stack([O, P, N], dim = 1)
+        
         probs = torch.softmax(merged_logits, axis=1).squeeze()
         _, pred = torch.max(probs, -1)
         seq_probs = probs[0]
