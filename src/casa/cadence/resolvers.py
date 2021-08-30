@@ -61,10 +61,10 @@ class CadenceSimpleResolver(CadetResolverMixin):
         if op_crystal[0]:
             aspect[1] = op_crystal[0]
             aspect[fASP_SRC] = "crystal"
-        if op_crystal[1] > 3:
+        if (op_crystal[1] or 3) > 3:
             aspect[2] = "Positive"
             aspect[fPOL_SRC] = "crystal"
-        elif op_crystal[1] < 3:
+        elif (op_crystal[1] or 3) < 3:
             aspect[2] = "Negative"
             aspect[fPOL_SRC] = "crystal"
         else:
