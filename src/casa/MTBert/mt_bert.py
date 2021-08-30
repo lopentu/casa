@@ -132,8 +132,7 @@ class MTBert:
         merged_logits = torch.stack([O, P, N], dim = 1)
         
         probs = torch.softmax(merged_logits, axis=1).squeeze()
-        _, pred = torch.max(probs, -1)
-        seq_probs = probs[0]
+        _, pred = torch.max(probs, -1)        
         token_probs = probs[1:-1]
 
         pred = pred.cpu().numpy()
@@ -156,6 +155,11 @@ class MTBert:
         # # --- task 2: polarity classification ---
         # getting task 2 prediction
         t2records = {'preds':[]}
+        P = logits[0,[1,3]].sum()/2
+        N = logits[0,[0,2]].sum()/2
+        O = logits[0,[4]].sum()
+        seq_probs = torch.softmax(torch.tensor([O, P, N]), dim=-1)
+        
         _, pred = torch.max(seq_probs, -1)
         t2records['preds'].append(pred.cpu().item())
         t2records['probs'] = seq_probs.cpu().numpy()
