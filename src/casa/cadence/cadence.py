@@ -66,11 +66,11 @@ class Cadence:
     def analyze(self, intxt, strategy="simple"):
         out = self.process(intxt)
         if strategy.lower() == "simple":
-            return CadenceSimpleResolver().resolve(out)
-        if strategy.lower() == "multiple":
-            return CadenceMultiResolver().resolve(out)
-        if strategy.lower() == "bertonly":
-            return CadenceBertOnlyResolver().resolve(out)
+            out.aspects = CadenceSimpleResolver().resolve(out)
+        elif strategy.lower() == "multiple":
+            out.aspects = CadenceMultiResolver().resolve(out)
+        elif strategy.lower() == "bertonly":
+            out.aspects = CadenceBertOnlyResolver().resolve(out)
         else:
             raise ValueError("Unsupported strategy")
-        
+        return out

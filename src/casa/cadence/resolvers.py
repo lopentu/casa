@@ -79,9 +79,7 @@ class CadenceSimpleResolver(CadetResolverMixin):
             aspect[2] = op_mtbert["seq_polarity"]
             aspect[fPOL_SRC] = "mtbert"
         
-        out.aspects = [aspect]
-
-        return out
+        return [aspect]
 
 class CadenceMultiResolver(CadetResolverMixin):
     def __init__(self):
@@ -89,7 +87,7 @@ class CadenceMultiResolver(CadetResolverMixin):
     
     def resolve(self, out: CadenceOutput):  
         print("[WARN] CadenceMultiResolver is not implemented")
-        return out
+        return []
 
 class CadenceBertOnlyResolver(CadetResolverMixin):
     def __init__(self):
@@ -108,8 +106,6 @@ class CadenceBertOnlyResolver(CadetResolverMixin):
         
         # use mt_bert seq result
         aspect[2] = op_mtbert["seq_polarity"]
-        aspect[fPOL_SRC] = "mtbert"
-        
-        out.aspects = [aspect]
+        aspect[fPOL_SRC] = "mtbert"                
 
-        return out
+        return [aspect]
