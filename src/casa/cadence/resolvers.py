@@ -52,17 +52,29 @@ class CadenceSimpleResolver(CadetResolverMixin):
         op_cadet = out.cadet
         op_mtbert = out.mt_bert
         cadet_det = self.resolve_cadet(op_cadet)
-        aspect = [cadet_det[0], cadet_det[0], -1]
+        # aspect: List[entity, service, polarity, aspect_source, polarity_source]
+        fASP_SRC = 3
+        fPOL_SRC = 4
+        aspect = [cadet_det[0], cadet_det[1], -1, "cadet", "none"]
 
         # use crystal result if available
         if op_crystal[0]:
             aspect[1] = op_crystal[0]
-        if op_crystal[1]:
-            aspect[2] = op_crystal[1]
+            aspect[fASP_SRC] = "crystal"
+        if op_crystal[1] > 3:
+            aspect[2] = "Positive"
+            aspect[fPOL_SRC] = "crystal"
+        elif op_crystal[1] < 3:
+            aspect[2] = "Negative"
+            aspect[fPOL_SRC] = "crystal"
+        else:
+            # leave the aspect polarity untouched
+            pass
 
         # use mt_bert seq result
         if aspect[2] == -1:
             aspect[2] = op_mtbert["seq_polarity"]
+            aspect[fPOL_SRC] = "mtbert"
         
         out.aspects = [aspect]
 
