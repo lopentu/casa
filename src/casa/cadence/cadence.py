@@ -72,5 +72,5 @@ class Cadence:
         elif strategy.lower() == "bertonly":
             out.aspects = CadenceBertOnlyResolver().resolve(out)
         else:
-            raise ValueError("Unsupported strategy")
+            raise ValueError("Unsupported strategy: must be one of simple, multiple, bertonly")
         return out

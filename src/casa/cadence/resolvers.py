@@ -1,5 +1,7 @@
 from enum import Enum, auto
+from re import L
 import numpy as np
+from . import multi_resolver_utils as mr
 
 class CadenceResolveStrategy(Enum):
     Simple   = auto()
@@ -24,6 +26,12 @@ class CadenceOutput:
 
     def __repr__(self):
         return f"<CadenceOutput: {self.format_aspect()}>"
+    
+    @property
+    def entities(self):
+        ent_iter = filter(lambda x: x in self.cadet.get("entity", []),
+                    self.cadet.get("tokens_attrib", {}).keys())
+        return list(ent_iter)
 
 class CadetResolverMixin:
     def resolve_cadet(self, cadet_output, 
@@ -83,11 +91,21 @@ class CadenceSimpleResolver(CadetResolverMixin):
 
 class CadenceMultiResolver(CadetResolverMixin):
     def __init__(self):
-        pass
+        self.label_map = None
+        self.ch_labels = None
+        self.aspects = None
+        self.cadence_out = None
     
     def resolve(self, out: CadenceOutput):  
-        print("[WARN] CadenceMultiResolver is not implemented")
-        return []
+        label_map = mr.compute_label_maps(out)
+        ch_labels = mr.build_char_labels(label_map)
+        aspects = mr.build_aspects(out, ch_labels)
+        self.cadence_out = out
+        self.label_map = label_map
+        self.ch_labels = ch_labels
+        self.aspects = aspects
+        return aspects
+
 
 class CadenceBertOnlyResolver(CadetResolverMixin):
     def __init__(self):

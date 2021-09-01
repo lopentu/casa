@@ -3,12 +3,16 @@ def pn_mask(token_probs, pn_thres=0.1):
     pn_idx[pn_prob < pn_thres] = -1
     return pn_prob.numpy(), pn_idx.numpy()
 
-def visualize_tokens(cadence_output, pn_thres=0.1):
+def visualize_tokens(cadence_output, pn_thres=0.1, quiet=False):
     token_probs = cadence_output.mt_bert["token_probs"]
     text = cadence_output.mt_bert["text"]
     pn_prob, pn_idx = pn_mask(token_probs, pn_thres)
 
     vistext = ""
+
+    def _print(*args, **kwargs):
+        if not quiet:
+            print(*args, **kwargs)        
 
     for tok_i, tok in enumerate(text.replace(" ", "")):
         if tok_i >= pn_idx.size: break
@@ -21,6 +25,8 @@ def visualize_tokens(cadence_output, pn_thres=0.1):
         else:
             vistext += tok
         if (tok_i+1) % 60 ==0:
-            print(vistext)
+            _print(vistext)
             vistext = ""
-    print(vistext)
+    _print(vistext)
+
+    return {"pn_prob": pn_prob, "pn_idx": pn_idx}
