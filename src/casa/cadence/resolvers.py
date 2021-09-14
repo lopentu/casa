@@ -35,7 +35,7 @@ class CadenceOutput:
 
     @property
     def text(self):
-        return self.mt_bert["text"]
+        return self.mt_bert["text"].replace(" ", "")
 
 class CadetResolverMixin:
     def resolve_cadet(self, cadet_output, 
@@ -56,10 +56,11 @@ class CadetResolverMixin:
         return (ret_ent, ret_srv)
 
 class CadenceSimpleResolver(CadetResolverMixin):
-    def __init__(self, crystal_text_len=500):
+    def __init__(self, crystal_text_len=500, mtbert_neu_prob_thres=0.7):
         # maximum length to pass through Crystal.
         # i.e. text longer than the threshold skip Crystal stage.
         self.crystal_text_len = crystal_text_len
+        self.mtbert_neu_prob_thres = mtbert_neu_prob_thres
     
     def resolve(self, out: CadenceOutput):                
         op_crystal = out.crystal["result"]
@@ -90,7 +91,8 @@ class CadenceSimpleResolver(CadetResolverMixin):
 
         # use mt_bert seq result
         BYPASS_CRYSTAL = len(out.text) > self.crystal_text_len
-        if BYPASS_CRYSTAL or aspect[2] == -1:
+        if (BYPASS_CRYSTAL or aspect[2] == -1 or 
+            op_mtbert["seq_prob"][0] > self.mtbert_neu_prob_thres):
             aspect[2] = op_mtbert["seq_polarity"]
             aspect[fPOL_SRC] = "mtbert"
         

@@ -34,27 +34,7 @@ class Cadence:
         config_path = Path(config_path)
         inst = Cadence(config_path)
         return inst
-            
-    def sentiment(self, intxt, mode="all"):
-        src = "CxG"
-        labels = ["Neutral", "Positive", "Negative"]
-        probs = None
-        
-        if mode.lower() != "bert_only":
-            probs = self.sentiment_CxG(intxt)        
-        
-        if probs is None and mode.lower()!="cxg_only":
-            probs = self.sentiment_bert(intxt)
-            src = "Bert"
-            
-        if probs is None:
-            probs = np.array([1, 0, 0], dtype=np.float32)
-            src = "Abstain"
-        
-        return {"sentiment": labels,
-                "sentiment_src": src, 
-                "sentiment_probs": probs}
-    
+               
     def process(self, intxt: str, max_eval_count=3) -> CadenceOutput:
         cadet_res = self.cadet.detect(intxt)
         crystal_res = self.crystal.analyze(intxt, max_eval_count=max_eval_count)
