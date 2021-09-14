@@ -33,6 +33,10 @@ class CadenceOutput:
                     self.cadet.get("tokens_attrib", {}).keys())
         return list(ent_iter)
 
+    @property
+    def text(self):
+        return self.mt_bert["text"]
+
 class CadetResolverMixin:
     def resolve_cadet(self, cadet_output, 
                       entity_thres=0.3, service_thres=0.1):
@@ -52,8 +56,10 @@ class CadetResolverMixin:
         return (ret_ent, ret_srv)
 
 class CadenceSimpleResolver(CadetResolverMixin):
-    def __init__(self):
-        pass
+    def __init__(self, crystal_text_len=500):
+        # maximum length to pass through Crystal.
+        # i.e. text longer than the threshold skip Crystal stage.
+        self.crystal_text_len = crystal_text_len
     
     def resolve(self, out: CadenceOutput):                
         op_crystal = out.crystal["result"]
@@ -83,7 +89,8 @@ class CadenceSimpleResolver(CadetResolverMixin):
             pass
 
         # use mt_bert seq result
-        if aspect[2] == -1:
+        BYPASS_CRYSTAL = len(out.text) > self.crystal_text_len
+        if BYPASS_CRYSTAL or aspect[2] == -1:
             aspect[2] = op_mtbert["seq_polarity"]
             aspect[fPOL_SRC] = "mtbert"
         

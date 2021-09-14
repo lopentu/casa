@@ -79,7 +79,7 @@ class MTBert:
         return spanidx_forall, spans_forall, spanpols_forall
 
     @staticmethod
-    def summarize(input, rec1, rec2, spidx, spans, sppols, isbatch):
+    def summarize(input, opn_logits, rec1, rec2, spidx, spans, sppols, isbatch):
         # rec1 = {'input_ids':[], 'preds':[], 'logits':[]}
         # rec2 = {'preds':[], 'probs':[]}
         pols = []
@@ -92,6 +92,7 @@ class MTBert:
 
         if not isbatch:
             return {'text': input, 
+                    'opn_logits': opn_logits,
                     'seq_polarity': pol, 'seq_probs':rec2['probs'],
                     'spans': spans[0], 'span_idxs': spidx[0], 
                     'span_pols': sppols[0],                    
@@ -148,7 +149,9 @@ class MTBert:
         # t1records['logits'] = logits.cpu().numpy()
         t1records['probs'] = token_probs
 
-        true_predictions = [["OPN"[p] for (p, inpid) in zip(t1records['pred'], t1records['input_ids']) if inpid not in self.spectoks]]
+        true_predictions = [["OPN"[p] for (p, inpid) 
+                            in zip(t1records['pred'], t1records['input_ids']) 
+                            if inpid not in self.spectoks]]
 
         spidx, spans, spanpols = self.findspans([input], true_predictions)
 
@@ -157,7 +160,7 @@ class MTBert:
         t2records = {'preds':[]}
         P = logits[0,[1,3]].sum()/2
         N = logits[0,[0,2]].sum()/2
-        O = logits[0,[4]].sum()
+        O = logits[0,[4]].sum()        
         seq_probs = torch.softmax(torch.tensor([O, P, N]), dim=-1)
         
         _, pred = torch.max(seq_probs, -1)
@@ -166,7 +169,7 @@ class MTBert:
 
         # # --- organize ---
 
-        return self.summarize(input, t1records, t2records, spidx, spans, spanpols, isbatch = False)
+        return self.summarize(input, merged_logits.numpy(), t1records, t2records, spidx, spans, spanpols, isbatch = False)
 
     def bpredict(self, input, batch_size = 100, max_len = 300):
         '''batch prediction

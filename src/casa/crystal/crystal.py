@@ -14,7 +14,8 @@ ATTR_PRIORS = {
 class Crystal:
     def __init__(self):
         self.eval_onto = {}
-        self.cxlist = {}
+        self.cxlist = {}     
+        self.max_eval_count = 3  
 
     @classmethod
     def load(cls, data_dir):
@@ -61,27 +62,29 @@ class Crystal:
 
         detected = set()
         for eval_key, eval_val in self.eval_onto.items():
-            if eval_key in text and eval_val[0][2] > 0.1:
+            eval_count = text.count(eval_key)
+            if eval_count > 0 and eval_val[0][2] > 0.1:
                 # if there is already a longer match,
                 # skip the current match
                 if any((eval_key in det_x)
                         for det_x in detected):
                     continue
                 detected.add(eval_key)
-                result["onto"].append((eval_key, eval_val))
+                result["onto"].append((eval_key, eval_val, eval_count))
 
         return result
 
     def dynamic_solve_ontos(self, ontos):
         # ontos: List[Onto]
-        # Onto: Tuple[word, List[EvalParam]]
+        # Onto: Tuple[word, List[EvalParam], MatchCount]
+        # MatchCount: int
         # EvalParam: Attribute, Pol, Weight
 
-        # trace: List[word, State]
+        # trace: List[word, State, MatchCount]
         # State: Dict[Attribute, Score]
         trace = []
-        for word, eval_params in ontos:
-            _, state = trace[-1] if trace else [None, {}]
+        for word, eval_params, match_count in ontos:
+            _, state, _ = trace[-1] if trace else [None, {}, 0]
             state = deepcopy(state)
             # add category smoothing
             categories = [x[1:x.index("]")]
@@ -97,13 +100,13 @@ class Crystal:
                 score += ATTR_PRIORS.get(attr, 0)
                 state[attr] = score
 
-            trace.append([word, state])
+            trace.append([word, state, match_count])
 
         # decode trace
         word_attr_map = {}
         for trace_x, onto_x in zip(trace, ontos):
-            word, state = trace_x
-            _, eval_params = onto_x
+            word, state, match_count = trace_x
+            _, eval_params, _ = onto_x
 
             max_score = max(state.values())
             max_attr = [attr for attr, score
@@ -111,12 +114,13 @@ class Crystal:
                         if score==max_score]
             max_attr = max_attr[0] if max_attr else ""
             sel_eval_param = [x for x in eval_params if x[0]==max_attr]
-            if sel_eval_param:
+            if sel_eval_param and match_count < self.max_eval_count:
                 word_attr_map[word] = sel_eval_param[0]
 
         return word_attr_map, trace
 
-    def analyze(self, text):
+    def analyze(self, text, max_eval_count=3):
+        self.max_eval_count = max_eval_count
         dres = self.detect(text)
         ontos = dres.get("onto", [])
         

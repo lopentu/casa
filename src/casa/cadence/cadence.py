@@ -55,16 +55,16 @@ class Cadence:
                 "sentiment_src": src, 
                 "sentiment_probs": probs}
     
-    def process(self, intxt: str) -> CadenceOutput:
+    def process(self, intxt: str, max_eval_count=3) -> CadenceOutput:
         cadet_res = self.cadet.detect(intxt)
-        crystal_res = self.crystal.analyze(intxt)
+        crystal_res = self.crystal.analyze(intxt, max_eval_count=max_eval_count)
         mtbert_res = self.mt_bert.analyze(intxt)
         
         out = CadenceOutput(cadet_res, crystal_res, mtbert_res)
         return out
 
-    def analyze(self, intxt, strategy="simple"):
-        out = self.process(intxt)
+    def analyze(self, intxt, strategy="simple", max_eval_count=3):
+        out = self.process(intxt, max_eval_count=max_eval_count)
         if strategy.lower() == "simple":
             out.aspects = CadenceSimpleResolver().resolve(out)
         elif strategy.lower() == "multiple":

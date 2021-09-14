@@ -1,7 +1,7 @@
 
 from typing import List, Dict
 from itertools import groupby
-from .utils import visualize_tokens
+from .utils import visualize_tokens, find_all_pos
 
 # LabelMap:
 # ent:  {'亞太電信': [0], '中華電信': [7]}
@@ -16,12 +16,6 @@ LabelMap = Dict[str, any]
 CharMap = Dict[str, any]
 
 
-def find_all_pos(text, target, start=0):
-    try:
-        pos = text.index(target, start)
-        return [pos] + find_all_pos(text, target, start=pos+1)
-    except ValueError:
-        return []
 
 def compute_label_maps(out: "CadenceOutput") -> LabelMap:
     ent_tokens = {}
