@@ -92,7 +92,7 @@ class CadenceSimpleResolver(CadetResolverMixin):
         # use mt_bert seq result
         BYPASS_CRYSTAL = len(out.text) > self.crystal_text_len
         if (BYPASS_CRYSTAL or aspect[2] == -1 or 
-            op_mtbert["seq_prob"][0] > self.mtbert_neu_prob_thres):
+            op_mtbert["seq_probs"][0] > self.mtbert_neu_prob_thres):
             aspect[2] = op_mtbert["seq_polarity"]
             aspect[fPOL_SRC] = "mtbert"
         

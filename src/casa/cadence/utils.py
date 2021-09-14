@@ -78,10 +78,16 @@ def visualize_tokens(cadence_output, othres=4, quiet=False):
         elif cadet_idx[tok_i] == 91:
             # green
             vistext += f"\x1b[32m{tok}\x1b[0m"                
-        elif crystal_idx[tok_i] == 1 or pn_idx[tok_i] == 1:
+        elif crystal_idx[tok_i] == 1:
             # red
             vistext += f"\x1b[31m{tok}\x1b[0m"
-        elif crystal_idx[tok_i] == 0 or pn_idx[tok_i] == 0:
+        elif crystal_idx[tok_i] == 0:
+            # cyan
+            vistext += f"\x1b[36m{tok}\x1b[0m"
+        elif pn_idx[tok_i] == 1:
+            # red
+            vistext += f"\x1b[31m{tok}\x1b[0m"
+        elif pn_idx[tok_i] == 0:
             # cyan
             vistext += f"\x1b[36m{tok}\x1b[0m"
         else:
