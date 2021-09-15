@@ -69,38 +69,44 @@ def visualize_tokens(cadence_output, othres=4, quiet=False):
         if not quiet:
             print(*args, **kwargs)        
 
+    tag_idx = np.zeros_like(pn_idx) - 1
     for tok_i, tok in enumerate(text.replace(" ", "")):
         if tok_i >= pn_idx.size: break
 
         if cadet_idx[tok_i] == 90:
             # blue
             vistext += f"\x1b[34m{tok}\x1b[0m"
+            tag_idx[tok_i] = 90
         elif cadet_idx[tok_i] == 91:
             # green
             vistext += f"\x1b[32m{tok}\x1b[0m"                
+            tag_idx[tok_i] = 91
         elif crystal_idx[tok_i] == 1:
             # red
             vistext += f"\x1b[31m{tok}\x1b[0m"
+            tag_idx[tok_i] = 1
         elif crystal_idx[tok_i] == 0:
             # cyan
             vistext += f"\x1b[36m{tok}\x1b[0m"
+            tag_idx[tok_i] = 0
         elif pn_idx[tok_i] == 1:
             # red
             vistext += f"\x1b[31m{tok}\x1b[0m"
+            tag_idx[tok_i] = 1
         elif pn_idx[tok_i] == 0:
             # cyan
             vistext += f"\x1b[36m{tok}\x1b[0m"
+            tag_idx[tok_i] = 0
         else:
             vistext += tok
+            tag_idx[tok_i] = -1
+
         if (tok_i+1) % 60 ==0:
             _print(vistext)
             vistext = ""
     _print(vistext)
 
-    tag_idx = pn_idx.copy()
-    tag_idx[crystal_idx!=-1] = tag_idx[crystal_idx!=-1]
-    tag_idx[cadet_idx!=0] = cadet_idx[cadet_idx!=0]    
     vis_tokens = {"text": text, 
-                  "tag_idx": pn_idx,
+                  "tag_idx": tag_idx,
                   "pn_prob": pn_prob}
     return vis_tokens
