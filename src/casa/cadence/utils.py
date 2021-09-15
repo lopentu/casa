@@ -97,7 +97,9 @@ def visualize_tokens(cadence_output, othres=4, quiet=False):
             vistext = ""
     _print(vistext)
 
-    pn_idx[cadet_idx!=0] = cadet_idx[cadet_idx!=0]
+    tag_idx = pn_idx.copy()
+    tag_idx[crystal_idx!=-1] = tag_idx[crystal_idx!=-1]
+    tag_idx[cadet_idx!=0] = cadet_idx[cadet_idx!=0]    
     vis_tokens = {"text": text, 
                   "tag_idx": pn_idx,
                   "pn_prob": pn_prob}

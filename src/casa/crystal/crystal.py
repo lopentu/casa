@@ -5,7 +5,8 @@ import pandas as pd
 from copy import deepcopy
 
 ATTR_PRIORS = {
-    "[資費]方案活動": 0.05,
+    "[資費]涵蓋": 0.10,
+    "[資費]方案活動": 0.05,    
     "[資費]低資費方案": -0.05,
     "[加值]國際漫遊": -0.1,
     "[加值]電信APP": -0.1,    
